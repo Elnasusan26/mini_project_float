@@ -65,45 +65,14 @@ def admin_upload():
     return render_template("admin_upload.html")
 
 
-# ---------------- VIEW CLASSES ----------------
-@app.route("/view/classes")
-def view_classes():
-    return render_template(
-        "view_class.html",
-        classes=Class.query.all()
-    )
-
-
-# ---------------- VIEW ROOMS ----------------
-@app.route("/view/rooms")
-def view_rooms():
-    return render_template(
-        "view_rooms.html",
-        rooms=Room.query.all()
-    )
-
-
-# ---------------- VIEW SUBJECTS ----------------
-@app.route("/view/subjects")
-def view_subjects():
-    return render_template(
-        "view_subjects.html",
-        subjects=Subject.query.all()
-    )
-
-
 # ---------------- VIEW RAW TIMETABLE ----------------
 @app.route("/view/timetable")
 def view_timetable():
-    entries = (
-        TimetableEntry.query
-        .order_by(
-            TimetableEntry.class_id,
-            TimetableEntry.day,
-            TimetableEntry.slot
-        )
-        .all()
-    )
+    entries = TimetableEntry.query.order_by(
+        TimetableEntry.class_id,
+        TimetableEntry.day,
+        TimetableEntry.slot
+    ).all()
 
     grouped = defaultdict(list)
     for e in entries:
@@ -123,79 +92,76 @@ def allocate_floating_rooms():
 
     unresolved = TimetableEntry.query.filter(
         TimetableEntry.is_floating == True,
-        TimetableEntry.room_id == None
+        TimetableEntry.room_id == None,
+        TimetableEntry.is_lab_hour == False
     ).all()
 
     print(f"Floating entries WITHOUT rooms (before): {len(unresolved)}")
 
-    for e in unresolved:
-        print(
-            f"ID={e.id} | Class={e.class_obj.name} | "
-            f"{e.day} | Slot={e.slot} | "
-            f"Subject={e.subject.name if e.subject else '-'}"
-        )
-
-    print("===============================================\n")
-
     allocate_rooms()
 
-    post_unresolved = TimetableEntry.query.filter(
-        TimetableEntry.is_floating == True,
-        TimetableEntry.room_id == None
-    ).count()
-
-    post_allocated = TimetableEntry.query.filter(
-        TimetableEntry.is_floating == True,
-        TimetableEntry.room_id != None
-    ).count()
-
     print("\n========== FLOATING ROOM DEBUG (AFTER) ==========")
-    print(f"Still unresolved: {post_unresolved}")
-    print(f"Allocated floating entries: {post_allocated}")
+
+    still_unresolved = TimetableEntry.query.filter(
+        TimetableEntry.is_floating == True,
+        TimetableEntry.room_id == None,
+        TimetableEntry.is_lab_hour == False
+    ).count()
+
+    print(f"Still unresolved: {still_unresolved}")
     print("===============================================\n")
 
     return "✅ Floating classrooms allocated successfully"
 
 
-# ---------------- VIEW FLOATING TIMETABLE (FINAL, CORRECT) ----------------
+# ---------------- VIEW FLOATING TIMETABLE (LAB + PARALLEL + THEORY) ----------------
 @app.route("/view/floating_timetable")
 def view_floating_timetable():
 
+    # 🔥 FIX: INCLUDE LAB HOURS ALSO
     entries = TimetableEntry.query.filter(
-        TimetableEntry.is_floating == True,
-        TimetableEntry.is_lab_hour == False
+        (TimetableEntry.is_floating == True) |
+        (TimetableEntry.is_lab_hour == True)
     ).order_by(
         TimetableEntry.class_id,
         TimetableEntry.day,
         TimetableEntry.slot
     ).all()
 
-    # raw[class][day][slot] = list of entries (parallel-safe)
     raw = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
-    print("\n========== PARALLEL GROUPING DEBUG ==========")
+    print("\n========== TIMETABLE BUILD DEBUG ==========")
 
     for e in entries:
         cls = e.class_obj.name
         day = e.day
         slot = normalize_slot(e.slot)
 
-        raw[cls][day][slot].append({
-            "subject": e.subject.name if e.subject else "-",
-            "room": e.room.name if e.room else "-",
-            "allocated": bool(e.room_id),
-            "batch": e.batch
-        })
+        # ---------- LAB ----------
+        if e.is_lab_hour:
+            raw[cls][day][slot].append({
+                "subject": e.subject.name if e.subject else "LAB",
+                "room": e.room.name if e.room else "",
+                "type": "lab"
+            })
+            print(f"LAB → {cls} | {day} | {slot}")
 
-        print(
-            f"APPEND → {cls} | {day} | {slot} | "
-            f"{e.subject.name if e.subject else '-'} | "
-            f"Room={e.room.name if e.room else '-'}"
-        )
+        # ---------- THEORY / PARALLEL ----------
+        else:
+            raw[cls][day][slot].append({
+                "subject": e.subject.name if e.subject else "-",
+                "room": e.room.name if e.room else "-",
+                "batch": e.batch,
+                "type": "theory"
+            })
+            print(
+                f"THEORY → {cls} | {day} | {slot} | "
+                f"{e.subject.name if e.subject else '-'} | "
+                f"Room={e.room.name if e.room else '-'}"
+            )
 
-    print("=============================================\n")
+    print("==========================================\n")
 
-    # Final timetable[class][day][slot] = list(entries)
     timetable = {}
 
     for cls, days in raw.items():
