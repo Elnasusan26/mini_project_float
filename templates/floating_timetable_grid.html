@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Floating Timetable</title>
+    <title>Floating Class Timetable</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -9,8 +9,8 @@
 
         table {
             border-collapse: collapse;
-            margin-bottom: 40px;
             width: 100%;
+            margin-bottom: 40px;
         }
 
         th, td {
@@ -22,25 +22,19 @@
         }
 
         th {
-            background: #f0f0f0;
-        }
-
-        .allocated {
-            background-color: #e6ffe6; /* green */
-        }
-
-        .unallocated {
-            background-color: #ffe6e6; /* red */
-        }
-
-        .done-msg {
-            color: green;
-            font-weight: bold;
-            margin-bottom: 30px;
+            background-color: #f2f2f2;
         }
 
         h2 {
             margin-top: 40px;
+        }
+
+        .allocated {
+            background-color: #e6ffe6;
+        }
+
+        .unallocated {
+            background-color: #ffe6e6;
         }
     </style>
 </head>
@@ -49,20 +43,7 @@
 <h1>Floating Class Timetable</h1>
 
 {% for class_name, class_data in timetable.items() %}
-
     <h2>Class: {{ class_name }}</h2>
-
-    {# -------- CHECK IF ANY FLOATING ENTRIES EXIST -------- #}
-    {% set has_entries = false %}
-    {% for day, day_data in class_data.items() %}
-        {% for slot, slot_data in day_data.items() %}
-            {% if slot_data|length > 0 %}
-                {% set has_entries = true %}
-            {% endif %}
-        {% endfor %}
-    {% endfor %}
-
-    {% if has_entries %}
 
     <table>
         <tr>
@@ -79,13 +60,15 @@
             {% for slot in slots %}
                 {% if day in class_data and slot in class_data[day] %}
                     {% set entries = class_data[day][slot] %}
+
                     <td class="{{ 'allocated' if entries[0].allocated else 'unallocated' }}">
-                        {% for entry in entries %}
-                            <div>
-                                <strong>{{ entry.subject }}</strong><br>
-                                ({{ entry.room }})
-                            </div>
-                        {% endfor %}
+                        <strong>
+                            {{ entries | map(attribute='subject') | join(' / ') }}
+                        </strong>
+                        <br>
+                        (
+                        {{ entries | map(attribute='room') | join(', ') }}
+                        )
                     </td>
                 {% else %}
                     <td>-</td>
@@ -94,12 +77,6 @@
         </tr>
         {% endfor %}
     </table>
-
-    {% else %}
-        <p class="done-msg">✔ All floating entries allocated for this class</p>
-    {% endif %}
-
-    <hr>
 
 {% endfor %}
 

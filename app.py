@@ -5,6 +5,7 @@ from collections import defaultdict
 from models import db, Class, Room, Subject, TimetableEntry
 from input_processor import process_inputs
 from allocator import allocate_rooms
+from utils.normalize import normalize_slot
 
 # ---------------- APP INIT ----------------
 app = Flask(__name__)
@@ -19,15 +20,15 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 db.init_app(app)
 
-# ---------------- FIXED SLOT ORDER ----------------
-TIME_SLOTS = [
-    "8.00_-_8.45",
+# ---------------- FIXED SLOT ORDER (NORMALIZED) ----------------
+TIME_SLOTS = list(map(normalize_slot, [
+    "8.00-8.45",
     "9.10-9.55",
-    "10.00_-_10.45",
+    "10.00-10.45",
     "10.50-11.35",
-    "11.55_-_12.40",
-    "12.45_-_1.30"
-]
+    "11.55-12.40",
+    "12.45-1.30"
+]))
 
 DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]
 
@@ -131,15 +132,13 @@ def allocate_floating_rooms():
         print(
             f"ID={e.id} | Class={e.class_obj.name} | "
             f"{e.day} | Slot={e.slot} | "
-            f"Subject={e.subject.name if e.subject else '-'} | room=None"
+            f"Subject={e.subject.name if e.subject else '-'}"
         )
 
     print("===============================================\n")
 
-    # ---- RUN ALLOCATOR ----
     allocate_rooms()
 
-    # ---- POST-ALLOCATION DEBUG ----
     post_unresolved = TimetableEntry.query.filter(
         TimetableEntry.is_floating == True,
         TimetableEntry.room_id == None
@@ -152,14 +151,13 @@ def allocate_floating_rooms():
 
     print("\n========== FLOATING ROOM DEBUG (AFTER) ==========")
     print(f"Still unresolved: {post_unresolved}")
-    print(f"Allocated but still floating (BUG): {post_allocated}")
+    print(f"Allocated floating entries: {post_allocated}")
     print("===============================================\n")
 
     return "✅ Floating classrooms allocated successfully"
 
 
-
-# ---------------- VIEW FLOATING TIMETABLE (GRID + PARALLEL MERGE) ----------------
+# ---------------- VIEW FLOATING TIMETABLE (FINAL, CORRECT) ----------------
 @app.route("/view/floating_timetable")
 def view_floating_timetable():
 
@@ -172,22 +170,40 @@ def view_floating_timetable():
         TimetableEntry.slot
     ).all()
 
-    timetable = {}
+    # raw[class][day][slot] = list of entries (parallel-safe)
+    raw = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+    print("\n========== PARALLEL GROUPING DEBUG ==========")
 
     for e in entries:
         cls = e.class_obj.name
         day = e.day
-        slot = e.slot
+        slot = normalize_slot(e.slot)
 
-        timetable.setdefault(cls, {})
-        timetable[cls].setdefault(day, {})
-        timetable[cls][day].setdefault(slot, [])
-
-        timetable[cls][day][slot].append({
+        raw[cls][day][slot].append({
             "subject": e.subject.name if e.subject else "-",
             "room": e.room.name if e.room else "-",
-            "allocated": bool(e.room_id)
+            "allocated": bool(e.room_id),
+            "batch": e.batch
         })
+
+        print(
+            f"APPEND → {cls} | {day} | {slot} | "
+            f"{e.subject.name if e.subject else '-'} | "
+            f"Room={e.room.name if e.room else '-'}"
+        )
+
+    print("=============================================\n")
+
+    # Final timetable[class][day][slot] = list(entries)
+    timetable = {}
+
+    for cls, days in raw.items():
+        timetable.setdefault(cls, {})
+        for day, slots in days.items():
+            timetable[cls].setdefault(day, {})
+            for slot, items in slots.items():
+                timetable[cls][day][slot] = items
 
     return render_template(
         "floating_timetable_grid.html",
