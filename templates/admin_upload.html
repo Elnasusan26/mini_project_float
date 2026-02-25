@@ -1,35 +1,46 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Admin Upload</title>
-</head>
-<body>
+{% extends "admin_base.html" %}
 
-<h2>Upload Timetable Data</h2>
+{% block content %}
 
-<form action="/admin_upload" method="POST" enctype="multipart/form-data">
+<h1 class="page-title">Upload Timetable Files</h1>
+<p class="page-subtitle">Upload all required input files</p>
 
-    <label>Class Type</label><br>
-    <input type="file" name="class_type" required><br><br>
+<form class="upload-form" method="POST" enctype="multipart/form-data">
 
-    <label>Teacher Subject Mapping</label><br>
-    <input type="file" name="teacher_subject" required><br><br>
+  <div class="upload-grid">
+    <div>
+      <label>Class Strength</label>
+      <input type="file" name="class_strength" required>
+    </div>
 
-    <label>Parallel Classes</label><br>
-    <input type="file" name="parallel_classes" required><br><br>
+    <div>
+      <label>Room Mapping</label>
+      <input type="file" name="room_mapping" required>
+    </div>
 
-    <label>Room Mapping</label><br>
-    <input type="file" name="room_mapping" required><br><br>
+    <div>
+      <label>Class Type</label>
+      <input type="file" name="class_type" required>
+    </div>
 
-    <label>Timetables</label><br>
-    <input type="file" name="timetables" required><br><br>
+    <div>
+      <label>Teacher Subject Mapping</label>
+      <input type="file" name="teacher_subject" required>
+    </div>
 
-    <label>Class Strength</label><br>
-    <input type="file" name="class_strength" required><br><br>
+    <div>
+      <label>Parallel Classes</label>
+      <input type="file" name="parallel_classes" required>
+    </div>
 
-    <button type="submit">Upload</button>
+    <div>
+      <label>Timetables</label>
+      <input type="file" name="timetables" required>
+    </div>
+  </div>
+
+  <button type="submit" class="primary-btn">Upload All Files</button>
 
 </form>
 
-</body>
-</html>
+{% endblock %}

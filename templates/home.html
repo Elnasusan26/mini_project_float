@@ -1,94 +1,61 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Timetable Management System</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-            margin: 0;
-            padding: 0;
-        }
+{% extends "admin_base.html" %}
 
-        header {
-            background: #2c3e50;
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
+{% block title %}Dashboard{% endblock %}
 
-        .container {
-            padding: 40px;
-            max-width: 900px;
-            margin: auto;
-        }
+{% block content %}
 
-        .card {
-            background: white;
-            padding: 25px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
+<style>
+  .page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 28px;
+  }
 
-        a.button {
-            display: inline-block;
-            padding: 12px 20px;
-            background: #2c3e50;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
+  .overview-cards {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
 
-        a.button:hover {
-            background: #1a252f;
-        }
-    </style>
-</head>
-<body>
+  .overview-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 40px;
+    flex: 1;
+    min-width: 200px;
+    text-align: center;
+  }
 
-<header>
-    <h1>Automated Timetable Management System</h1>
-    <p>Admin Dashboard</p>
-</header>
+  .overview-card h2 {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
 
-<div class="container">
+  .overview-card p {
+    font-size: 15px;
+    color: var(--muted);
+  }
+</style>
 
-    <div class="card">
-        <h2>1️⃣ Upload Timetable Data</h2>
-        <p>
-            Upload all required Excel files (class strength, room mapping, teacher-subject mapping, class timetables).
-        </p>
-        <a href="/admin_upload" class="button">Upload Data</a>
-    </div>
+<h1 class="page-title">System Overview</h1>
 
-    <div class="card">
-        <h2>2️⃣ Generate Timetable</h2>
-        <p>
-            Automatically allocate rooms, preserve lab hours, and handle parallel batches.
-        </p>
-        <a href="/generate" class="button">Generate Timetable</a>
-    </div>
-
-    <div class="card">
-        <h2>3️⃣ View Class Timetable</h2>
-        <p>
-            View the final timetable for a specific class.
-        </p>
-        <a href="/class/1" class="button">View Class Timetable</a>
-    </div>
-
-    <div class="card">
-        <h2>4️⃣ View Teacher Timetable</h2>
-        <p>
-            View personalized timetable for a teacher.
-        </p>
-        <a href="/teacher/1" class="button">View Teacher Timetable</a>
-    </div>
-
+<div class="overview-cards">
+  <div class="overview-card">
+    <h2>21</h2>
+    <p>Permanent Classes</p>
+  </div>
+  <div class="overview-card">
+    <h2>5</h2>
+    <p>Floating Classes</p>
+  </div>
+  <div class="overview-card">
+    <h2>3</h2>
+    <p>Allocated Classes</p>
+  </div>
 </div>
 
-</body>
-</html>
+{% endblock %}

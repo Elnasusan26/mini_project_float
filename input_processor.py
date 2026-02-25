@@ -142,7 +142,7 @@ def process_inputs():
         subject_map[subject_name] = subject
 
     # -------------------------------------------------
-    # 5️⃣ BASE TIMETABLES (LAB FIX APPLIED)
+    # 5️⃣ BASE TIMETABLES (🔥 LAB FIX HERE 🔥)
     # -------------------------------------------------
     xls = pd.ExcelFile("uploads/timetables.xlsx")
 
@@ -182,8 +182,9 @@ def process_inputs():
                     ))
                     continue
 
-                # LAB ✅ STORE REAL SUBJECT
+                # LAB ✅ KEEP SUBJECT
                 if subject_type.get(subject_name) == "lab":
+
                     subject = subject_map.get(subject_name)
                     if subject is None:
                         subject = Subject(
@@ -197,7 +198,7 @@ def process_inputs():
 
                     db.session.add(TimetableEntry(
                         class_id=cls.id,
-                        subject_id=subject.id,
+                        subject_id=subject.id,   # ✅ FIX
                         teacher_id=None,
                         room_id=None,
                         day=day,
