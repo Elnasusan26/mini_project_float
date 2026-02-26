@@ -3,28 +3,276 @@
 {% block title %}Teacher Timetable{% endblock %}
 
 {% block content %}
-<h2>Teacher Timetable</h2>
 
-<table>
-    <tr>
-        <th>Day</th>
-        <th>Time Slot</th>
-        <th>Class</th>
-        <th>Subject</th>
-        <th>Room</th>
-        <th>Batch</th>
-    </tr>
+<style>
+  .page-header {
+    margin-bottom: 28px;
+  }
+  .page-header h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .page-header p {
+    font-size: 15px;
+    color: var(--muted);
+  }
 
+  .table-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    padding: 24px;
+  }
+
+  .table-scroll {
+    overflow-x: auto;
+    cursor: grab;
+  }
+
+  .table-scroll:active {
+    cursor: grabbing;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  thead th {
+    background: var(--navy);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 14px 24px;
+    text-align: center;
+    white-space: nowrap;
+    min-width: 180px;
+  }
+
+  thead th:first-child {
+    border-radius: 8px 0 0 8px;
+    text-align: left;
+    background: #fff;
+    color: var(--muted);
+    font-weight: 600;
+    min-width: 130px;
+    font-size: 14px;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+  }
+
+  thead th:last-child { border-radius: 0 8px 8px 0; }
+
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg); }
+
+  tbody td {
+    padding: 12px 10px;
+    font-size: 14px;
+    color: var(--text);
+    vertical-align: top;
+    text-align: center;
+  }
+
+  td.time-col {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 600;
+    text-align: left;
+    padding-left: 8px;
+    white-space: nowrap;
+    vertical-align: middle;
+    position: sticky;
+    left: 0;
+    background: #fff;
+    z-index: 1;
+    border-right: 1px solid var(--border);
+    min-width: 130px;
+  }
+
+  tbody tr:hover td.time-col { background: var(--bg); }
+
+  .class-cell {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    text-align: left;
+    min-width: 160px;
+  }
+
+  .class-cell .subject {
+    font-weight: 700;
+    color: var(--text);
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .class-cell .meta {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .class-cell.is-floating {
+    border-color: var(--teal);
+    background: var(--teal-lt);
+  }
+  .class-cell.is-floating .subject { color: var(--teal); }
+
+  .class-cell.is-lab {
+    border-color: #0f9e8e;
+    background: #ccefeb;
+  }
+  .class-cell.is-lab .subject { color: #0a7a6e; }
+
+  .room-tag {
+    display: inline-block;
+    background: rgba(0,0,0,0.07);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+
+  .room-tag.floating { background: var(--teal); color: #fff; }
+  .room-tag.lab      { background: #0f9e8e; color: #fff; }
+
+  .legend {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .legend-box {
+    width: 18px; height: 18px;
+    border-radius: 5px;
+    border: 2px solid;
+    flex-shrink: 0;
+  }
+
+  .legend-box.floating { background: var(--teal-lt); border-color: var(--teal); }
+  .legend-box.lab      { background: #ccefeb; border-color: #0f9e8e; }
+  .legend-box.regular  { background: var(--white); border-color: var(--border); }
+</style>
+
+<div class="page-header">
+  <h2>Teacher Timetable</h2>
+  <p>Your weekly class schedule</p>
+</div>
+
+<div class="table-card">
+  <div class="table-scroll" id="tableScroll">
+
+    {% set days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'] %}
+
+    {% set slots = [] %}
     {% for e in entries %}
-    <tr>
-        <td>{{ e.day }}</td>
-        <td>{{ e.slot }}</td>
-        <td>{{ e.class_id }}</td>
-        <td>{{ e.subject_id }}</td>
-        <td>{{ e.room_id }}</td>
-        <td>{{ e.batch }}</td>
-    </tr>
+      {% if e.slot not in slots %}
+        {% set _ = slots.append(e.slot) %}
+      {% endif %}
     {% endfor %}
-</table>
+
+    {% set lookup = {} %}
+    {% for e in entries %}
+      {% if e.slot not in lookup %}
+        {% set _ = lookup.update({e.slot: {}}) %}
+      {% endif %}
+      {% set _ = lookup[e.slot].update({e.day: e}) %}
+    {% endfor %}
+
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          {% for day in days %}
+            <th>{{ day }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for slot in slots | sort %}
+        <tr>
+          <td class="time-col">{{ slot | replace('_-_', ' – ') }}</td>
+          {% for day in days %}
+            <td>
+              {% if lookup[slot] is defined and day in lookup[slot] %}
+                {% set e = lookup[slot][day] %}
+                {% set room_str = e.room_id | string | upper %}
+                {% set subj_str = e.subject_id | string | upper %}
+                {% set is_float = room_str.startswith('FL') %}
+                {% set is_lab = 'LAB' in subj_str %}
+                <div class="class-cell {% if is_float %}is-floating{% elif is_lab %}is-lab{% endif %}">
+                  <div class="subject">{{ e.subject_id }}</div>
+                  <div class="meta">Class {{ e.class_id }}</div>
+                  <span class="room-tag {% if is_float %}floating{% elif is_lab %}lab{% endif %}">
+                    {{ e.room_id if e.room_id else '—' }}
+                  </span>
+                  {% if e.batch and e.batch != 'None' %}
+                    <span style="font-size:12px; color:var(--muted); float:right;">{{ e.batch }}</span>
+                  {% endif %}
+                </div>
+              {% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-box floating"></div>
+      Floating Class
+    </div>
+    <div class="legend-item">
+      <div class="legend-box lab"></div>
+      Lab Session
+    </div>
+    <div class="legend-item">
+      <div class="legend-box regular"></div>
+      Regular Class
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const slider = document.getElementById('tableScroll');
+  let isDown = false, startX, scrollLeft;
+
+  slider.addEventListener('mousedown', (e) => {
+    isDown = true;
+    startX = e.pageX - slider.offsetLeft;
+    scrollLeft = slider.scrollLeft;
+  });
+  slider.addEventListener('mouseleave', () => isDown = false);
+  slider.addEventListener('mouseup', () => isDown = false);
+  slider.addEventListener('mousemove', (e) => {
+    if (!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - slider.offsetLeft;
+    slider.scrollLeft = scrollLeft - (x - startX);
+  });
+</script>
 
 {% endblock %}

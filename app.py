@@ -1,32 +1,273 @@
-from flask import Flask
+from flask import (
+    Flask, render_template, request,
+    redirect, url_for, flash, session, abort
+)
 import os
+from collections import defaultdict
+from functools import wraps
 
-from models import db
-from routes import register_routes
+from models import db, User, Class, Room, Subject, TimetableEntry
+from input_processor import process_inputs
+from allocator import allocate_rooms
+from utils.normalize import normalize_slot
 
-def create_app():
-    app = Flask(__name__)
+# ---------------- APP INIT ----------------
+app = Flask(__name__)
+app.secret_key = "floated-secret"
 
-    # ---------------- CONFIG ----------------
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# ---------------- CONFIG ----------------
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    UPLOAD_FOLDER = "uploads"
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-    app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-    # ---------------- INIT EXTENSIONS ----------------
-    db.init_app(app)
+db.init_app(app)
 
-    # ---------------- REGISTER ROUTES ----------------
-    register_routes(app)
+# ---------------- FIXED SLOT ORDER (NORMALIZED) ----------------
+TIME_SLOTS = list(map(normalize_slot, [
+    "8.00-8.45",
+    "9.10-9.55",
+    "10.00-10.45",
+    "10.50-11.35",
+    "11.55-12.40",
+    "12.45-1.30"
+]))
 
-    return app
+DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]
+
+# ==============================================================
+# AUTH HELPERS
+# ==============================================================
+
+def login_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if "user_id" not in session:
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return wrapper
 
 
-# ---------------- MAIN ----------------
+def role_required(role):
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            if session.get("role") != role:
+                abort(403)
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
+
+# ==============================================================
+# LOGIN
+# ==============================================================
+
+@app.route("/", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        user = User.query.filter_by(email=email).first()
+
+        if user and user.check_password(password):
+            session.clear()
+            session["user_id"] = user.id
+            session["role"] = user.role
+
+            if user.role == "admin":
+                return redirect(url_for("admin_dashboard"))
+            elif user.role == "teacher":
+                return redirect(url_for("teacher_dashboard"))
+            elif user.role == "student":
+                return redirect(url_for("student_dashboard"))
+
+        flash("Invalid email or password", "error")
+
+    return render_template("login.html")
+
+# ==============================================================
+# ADMIN DASHBOARD
+# ==============================================================
+
+@app.route("/admin")
+@login_required
+@role_required("admin")
+def admin_dashboard():
+    return render_template("home.html")
+
+# ==============================================================
+# ADMIN UPLOAD
+# ==============================================================
+
+@app.route("/admin_upload", methods=["GET", "POST"])
+@login_required
+@role_required("admin")
+def admin_upload():
+    if request.method == "POST":
+        files = {
+            "class_strength": "class_strength.xlsx",
+            "room_mapping": "room_mapping.xlsx",
+            "class_type": "class_type.xlsx",
+            "teacher_subject": "teacher_subject_mapping.xlsx",
+            "parallel_classes": "parallel_classes.xlsx",
+            "timetables": "timetables.xlsx",
+        }
+
+        for key, filename in files.items():
+            if key not in request.files or request.files[key].filename == "":
+                return f"❌ Missing file: {key}", 400
+
+            request.files[key].save(
+                os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            )
+
+        # 1️⃣ process input files
+        process_inputs()
+
+        # 2️⃣ allocate floating rooms
+        allocate_rooms()
+
+        # 3️⃣ success popup
+        flash("Files uploaded and timetable allocated successfully!", "success")
+
+        # 4️⃣ redirect to allocated timetable page
+        return redirect(url_for("view_floating_timetable"))
+
+    return render_template("admin_upload.html")
+
+# ==============================================================
+# VIEW RAW TIMETABLE (ADMIN ONLY)
+# ==============================================================
+
+@app.route("/view/timetable")
+@login_required
+@role_required("admin")
+def view_timetable():
+    entries = TimetableEntry.query.order_by(
+        TimetableEntry.class_id,
+        TimetableEntry.day,
+        TimetableEntry.slot
+    ).all()
+
+    grouped = defaultdict(list)
+    for e in entries:
+        grouped[e.class_obj.name].append(e)
+
+    return render_template(
+        "view_timetable.html",
+        grouped_entries=grouped
+    )
+
+# ==============================================================
+# VIEW ALLOCATED FLOATING TIMETABLE (ALL ROLES)
+# ==============================================================
+
+@app.route("/view/floating_timetable")
+@login_required
+def view_floating_timetable():
+
+    entries = TimetableEntry.query.filter(
+        (TimetableEntry.is_floating == True) |
+        (TimetableEntry.is_lab_hour == True)
+    ).order_by(
+        TimetableEntry.class_id,
+        TimetableEntry.day,
+        TimetableEntry.slot
+    ).all()
+
+    raw = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+    for e in entries:
+        cls = e.class_obj.name
+        day = e.day
+        slot = normalize_slot(e.slot)
+
+        if e.is_lab_hour:
+            raw[cls][day][slot].append({
+                "subject": e.subject.name if e.subject else "LAB",
+                "room": e.room.name if e.room else "",
+                "type": "lab"
+            })
+        else:
+            raw[cls][day][slot].append({
+                "subject": e.subject.name if e.subject else "-",
+                "room": e.room.name if e.room else "-",
+                "batch": e.batch,
+                "type": "theory"
+            })
+
+    timetable = {}
+
+    for cls, days in raw.items():
+        timetable.setdefault(cls, {})
+        for day, slots in days.items():
+            timetable[cls].setdefault(day, {})
+            for slot, items in slots.items():
+                timetable[cls][day][slot] = items
+
+    return render_template(
+        "floating_timetable_grid.html",
+        timetable=timetable,
+        slots=TIME_SLOTS,
+        days=DAYS
+    )
+
+# ==============================================================
+# TEACHER DASHBOARD
+# ==============================================================
+
+@app.route("/teacher")
+@login_required
+@role_required("teacher")
+def teacher_dashboard():
+
+    user = User.query.get(session["user_id"])
+
+    # Safety check
+    if not user.teacher_id:
+        return "No teacher linked to this account", 400
+
+    # Fetch only this teacher's timetable entries
+    entries = TimetableEntry.query.filter_by(
+        teacher_id=user.teacher_id
+    ).order_by(
+        TimetableEntry.day,
+        TimetableEntry.slot
+    ).all()
+
+    return render_template(
+        "teacher_timetable.html",
+        entries=entries,
+        teacher_name=user.email.split("@")[0].capitalize()
+    )
+
+# ==============================================================
+# STUDENT DASHBOARD
+# ==============================================================
+
+@app.route("/student")
+@login_required
+@role_required("student")
+def student_dashboard():
+    return render_template("class_timetable.html")
+
+# ==============================================================
+# LOGOUT
+# ==============================================================
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+# ==============================================================
+# MAIN
+# ==============================================================
+
 if __name__ == "__main__":
-    app = create_app()
     with app.app_context():
         db.create_all()
 
