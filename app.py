@@ -102,7 +102,24 @@ def login():
 @login_required
 @role_required("admin")
 def admin_dashboard():
-    return render_template("home.html")
+
+    permanent_count = Class.query.filter_by(class_category="permanent").count()
+
+    floating_count = Class.query.filter_by(class_category="floating").count()
+
+    allocated_count = (
+        TimetableEntry.query
+        .filter(TimetableEntry.room_id.isnot(None))
+        .distinct(TimetableEntry.class_id)
+        .count()
+    )
+
+    return render_template(
+        "home.html",
+        permanent_count=permanent_count,
+        floating_count=floating_count,
+        allocated_count=allocated_count
+    )
 
 
 # ==============================================================
@@ -122,6 +139,7 @@ def admin_upload():
             "teacher_subject": "teacher_subject_mapping.xlsx",
             "parallel_classes": "parallel_classes.xlsx",
             "timetables": "timetables.xlsx",
+            "student_mapping": "student_mapping.xlsx"
         }
 
         for key, filename in files.items():
@@ -143,7 +161,7 @@ def admin_upload():
 
 
 # ==============================================================
-# VIEW TIMETABLE (MAIN + SIDEBAR)
+# VIEW FULL TIMETABLE
 # ==============================================================
 
 @app.route("/view/timetable")
@@ -167,31 +185,16 @@ def view_floating_timetable():
         raw[cls][day][slot].append({
             "subject": e.subject.name if e.subject else "-",
             "room": e.room.name if e.room else "-",
-            "batch": e.batch,
-            "type": "lab" if e.is_lab_hour else "theory",
-            "category": e.class_obj.class_category
+            "batch": e.batch
         })
-
-    timetable = {}
-
-    for cls, days in raw.items():
-        timetable.setdefault(cls, {})
-        for day, slots in days.items():
-            timetable[cls].setdefault(day, {})
-            for slot, items in slots.items():
-                timetable[cls][day][slot] = items
 
     return render_template(
         "floating_timetable_grid.html",
-        timetable=timetable,
+        timetable=raw,
         slots=TIME_SLOTS,
         days=DAYS
     )
 
-
-# ==============================================================
-# TEACHER DASHBOARD
-# ==============================================================
 
 # ==============================================================
 # TEACHER DASHBOARD
@@ -207,12 +210,10 @@ def teacher_dashboard():
     if not user.teacher_id:
         return "No teacher linked to this account", 400
 
-    # Fetch using subject-teacher mapping
     entries = TimetableEntry.query.join(Subject).filter(
         Subject.teacher_id == user.teacher_id
     ).all()
 
-    # Proper chronological ordering
     day_order = {day: i for i, day in enumerate(DAYS)}
     slot_order = {slot: i for i, slot in enumerate(TIME_SLOTS)}
 
@@ -238,7 +239,33 @@ def teacher_dashboard():
 @login_required
 @role_required("student")
 def student_dashboard():
-    return render_template("class_timetable.html")
+
+    user = User.query.get(session["user_id"])
+
+    if not user.class_id:
+        return "No class linked to this account", 400
+
+    cls = Class.query.get(user.class_id)
+
+    entries = TimetableEntry.query.filter_by(
+        class_id=user.class_id
+    ).all()
+
+    day_order = {day: i for i, day in enumerate(DAYS)}
+    slot_order = {slot: i for i, slot in enumerate(TIME_SLOTS)}
+
+    entries.sort(
+        key=lambda e: (
+            day_order.get(e.day, 99),
+            slot_order.get(normalize_slot(e.slot), 99)
+        )
+    )
+
+    return render_template(
+        "student_timetable.html",
+        entries=entries,
+        class_name=cls.name
+    )
 
 
 # ==============================================================

@@ -113,67 +113,16 @@
 
     .sidebar-bottom a:hover { background: #fff0f0; color: #c0392b; }
 
-    .layout { display: flex; width: 100%; }
-
     .main-content {
-      margin-left: 240px;
-      flex: 1;
-      padding: 36px;
-      min-height: 100vh;
-    }
-
-    .flash-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.35);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
-    }
-
-    .flash-popup {
-      background: var(--white);
-      border-radius: 14px;
-      padding: 28px 32px;
-      text-align: center;
-      max-width: 360px;
-      width: 90%;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-    }
-
-    .flash-popup p { font-size: 15px; color: var(--text); margin-bottom: 18px; }
-
-    .flash-popup button {
-      padding: 10px 28px;
-      background: var(--teal);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .flash-popup.success { border-top: 4px solid var(--teal); }
-    .flash-popup.error   { border-top: 4px solid #c0392b; }
+  margin-left: 240px;
+  width: calc(100% - 240px);
+  padding: 36px;
+  min-height: 100vh;
+}
   </style>
 </head>
 
 <body>
-
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <div class="flash-overlay">
-      {% for category, message in messages %}
-        <div class="flash-popup {{ category }}">
-          <p>{{ message }}</p>
-          <button onclick="closePopup()">OK</button>
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
-{% endwith %}
 
 <div class="layout">
 
@@ -181,28 +130,50 @@
     <div>
       <div class="sidebar-top">
         <h2 class="logo">FloatED</h2>
-        <span class="subtitle">Teacher</span>
+        <span class="subtitle">
+          {{ session.role.capitalize() if session.role else "" }}
+        </span>
       </div>
 
       <nav class="sidebar-nav">
-        <a href="/admin" {% if request.path == '/admin' %}class="active"{% endif %}>
-          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-          Dashboard
-        </a>
-        <a href="/view/timetable" {% if request.path == '/view/timetable' %}class="active"{% endif %}>
-          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          Browse Class Timetable
-        </a>
-        <a href="/profile" {% if request.path == '/profile' %}class="active"{% endif %}>
-          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          Profile
-        </a>
+
+        {% if session.role == "admin" %}
+          <a href="{{ url_for('admin_dashboard') }}"
+             class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+            Dashboard
+          </a>
+
+          <a href="{{ url_for('view_floating_timetable') }}"
+             class="{% if request.endpoint == 'view_floating_timetable' %}active{% endif %}">
+            Browse Class Timetable
+          </a>
+
+        {% elif session.role == "teacher" %}
+          <a href="{{ url_for('teacher_dashboard') }}"
+             class="{% if request.endpoint == 'teacher_dashboard' %}active{% endif %}">
+            Dashboard
+          </a>
+
+          <a href="{{ url_for('view_floating_timetable') }}">
+            Browse Class Timetable
+          </a>
+
+        {% elif session.role == "student" %}
+          <a href="{{ url_for('student_dashboard') }}"
+             class="{% if request.endpoint == 'student_dashboard' %}active{% endif %}">
+            Dashboard
+          </a>
+
+          <a href="{{ url_for('view_floating_timetable') }}">
+            Browse Class Timetable
+          </a>
+        {% endif %}
+
       </nav>
     </div>
 
     <div class="sidebar-bottom">
-      <a href="/logout">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <a href="{{ url_for('logout') }}">
         Logout
       </a>
     </div>
@@ -213,13 +184,6 @@
   </main>
 
 </div>
-
-<script>
-  function closePopup() {
-    const overlay = document.querySelector(".flash-overlay");
-    if (overlay) overlay.style.display = "none";
-  }
-</script>
 
 </body>
 </html>
