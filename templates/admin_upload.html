@@ -8,6 +8,7 @@
 <form class="upload-form" method="POST" enctype="multipart/form-data">
 
   <div class="upload-grid">
+
     <div>
       <label>Class Strength</label>
       <input type="file" name="class_strength" required>
@@ -33,10 +34,17 @@
       <input type="file" name="parallel_classes" required>
     </div>
 
+    <!-- ✅ NEW FIELD ADDED HERE -->
+    <div>
+      <label>Student Mapping</label>
+      <input type="file" name="student_mapping" required>
+    </div>
+
     <div>
       <label>Timetables</label>
       <input type="file" name="timetables" required>
     </div>
+
   </div>
 
   <button type="submit" class="primary-btn">Upload All Files</button>

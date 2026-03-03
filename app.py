@@ -11,6 +11,7 @@ from input_processor import process_inputs
 from allocator import allocate_rooms
 from utils.normalize import normalize_slot
 
+
 # ---------------- APP INIT ----------------
 app = Flask(__name__)
 app.secret_key = "floated-secret"
@@ -25,7 +26,8 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 db.init_app(app)
 
-# ---------------- FIXED SLOT ORDER (NORMALIZED) ----------------
+
+# ---------------- FIXED SLOT ORDER ----------------
 TIME_SLOTS = list(map(normalize_slot, [
     "8.00-8.45",
     "9.10-9.55",
@@ -35,7 +37,9 @@ TIME_SLOTS = list(map(normalize_slot, [
     "12.45-1.30"
 ]))
 
-DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]
+DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY",
+        "THURSDAY", "FRIDAY", "SATURDAY"]
+
 
 # ==============================================================
 # AUTH HELPERS
@@ -59,6 +63,7 @@ def role_required(role):
             return f(*args, **kwargs)
         return wrapper
     return decorator
+
 
 # ==============================================================
 # LOGIN
@@ -88,6 +93,7 @@ def login():
 
     return render_template("login.html")
 
+
 # ==============================================================
 # ADMIN DASHBOARD
 # ==============================================================
@@ -98,6 +104,7 @@ def login():
 def admin_dashboard():
     return render_template("home.html")
 
+
 # ==============================================================
 # ADMIN UPLOAD
 # ==============================================================
@@ -107,6 +114,7 @@ def admin_dashboard():
 @role_required("admin")
 def admin_upload():
     if request.method == "POST":
+
         files = {
             "class_strength": "class_strength.xlsx",
             "room_mapping": "room_mapping.xlsx",
@@ -124,55 +132,26 @@ def admin_upload():
                 os.path.join(app.config["UPLOAD_FOLDER"], filename)
             )
 
-        # 1️⃣ process input files
         process_inputs()
-
-        # 2️⃣ allocate floating rooms
         allocate_rooms()
 
-        # 3️⃣ success popup
         flash("Files uploaded and timetable allocated successfully!", "success")
 
-        # 4️⃣ redirect to allocated timetable page
         return redirect(url_for("view_floating_timetable"))
 
     return render_template("admin_upload.html")
 
+
 # ==============================================================
-# VIEW RAW TIMETABLE (ADMIN ONLY)
+# VIEW TIMETABLE (MAIN + SIDEBAR)
 # ==============================================================
 
 @app.route("/view/timetable")
-@login_required
-@role_required("admin")
-def view_timetable():
-    entries = TimetableEntry.query.order_by(
-        TimetableEntry.class_id,
-        TimetableEntry.day,
-        TimetableEntry.slot
-    ).all()
-
-    grouped = defaultdict(list)
-    for e in entries:
-        grouped[e.class_obj.name].append(e)
-
-    return render_template(
-        "view_timetable.html",
-        grouped_entries=grouped
-    )
-
-# ==============================================================
-# VIEW ALLOCATED FLOATING TIMETABLE (ALL ROLES)
-# ==============================================================
-
 @app.route("/view/floating_timetable")
 @login_required
 def view_floating_timetable():
 
-    entries = TimetableEntry.query.filter(
-        (TimetableEntry.is_floating == True) |
-        (TimetableEntry.is_lab_hour == True)
-    ).order_by(
+    entries = TimetableEntry.query.order_by(
         TimetableEntry.class_id,
         TimetableEntry.day,
         TimetableEntry.slot
@@ -185,19 +164,13 @@ def view_floating_timetable():
         day = e.day
         slot = normalize_slot(e.slot)
 
-        if e.is_lab_hour:
-            raw[cls][day][slot].append({
-                "subject": e.subject.name if e.subject else "LAB",
-                "room": e.room.name if e.room else "",
-                "type": "lab"
-            })
-        else:
-            raw[cls][day][slot].append({
-                "subject": e.subject.name if e.subject else "-",
-                "room": e.room.name if e.room else "-",
-                "batch": e.batch,
-                "type": "theory"
-            })
+        raw[cls][day][slot].append({
+            "subject": e.subject.name if e.subject else "-",
+            "room": e.room.name if e.room else "-",
+            "batch": e.batch,
+            "type": "lab" if e.is_lab_hour else "theory",
+            "category": e.class_obj.class_category
+        })
 
     timetable = {}
 
@@ -215,6 +188,11 @@ def view_floating_timetable():
         days=DAYS
     )
 
+
+# ==============================================================
+# TEACHER DASHBOARD
+# ==============================================================
+
 # ==============================================================
 # TEACHER DASHBOARD
 # ==============================================================
@@ -226,23 +204,31 @@ def teacher_dashboard():
 
     user = User.query.get(session["user_id"])
 
-    # Safety check
     if not user.teacher_id:
         return "No teacher linked to this account", 400
 
-    # Fetch only this teacher's timetable entries
-    entries = TimetableEntry.query.filter_by(
-        teacher_id=user.teacher_id
-    ).order_by(
-        TimetableEntry.day,
-        TimetableEntry.slot
+    # Fetch using subject-teacher mapping
+    entries = TimetableEntry.query.join(Subject).filter(
+        Subject.teacher_id == user.teacher_id
     ).all()
+
+    # Proper chronological ordering
+    day_order = {day: i for i, day in enumerate(DAYS)}
+    slot_order = {slot: i for i, slot in enumerate(TIME_SLOTS)}
+
+    entries.sort(
+        key=lambda e: (
+            day_order.get(e.day, 99),
+            slot_order.get(normalize_slot(e.slot), 99)
+        )
+    )
 
     return render_template(
         "teacher_timetable.html",
         entries=entries,
         teacher_name=user.email.split("@")[0].capitalize()
     )
+
 
 # ==============================================================
 # STUDENT DASHBOARD
@@ -254,6 +240,7 @@ def teacher_dashboard():
 def student_dashboard():
     return render_template("class_timetable.html")
 
+
 # ==============================================================
 # LOGOUT
 # ==============================================================
@@ -262,6 +249,7 @@ def student_dashboard():
 def logout():
     session.clear()
     return redirect(url_for("login"))
+
 
 # ==============================================================
 # MAIN

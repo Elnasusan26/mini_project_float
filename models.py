@@ -142,4 +142,4 @@ class TimetableEntry(db.Model):
     class_obj = db.relationship("Class", backref="timetable_entries")
     subject = db.relationship("Subject")
     teacher = db.relationship("Teacher")
-    room = db.relationship("Room")
+    room = db.relationship("Room") 

@@ -43,11 +43,6 @@ def delete_base_entry(class_id, day, slot):
     ).all()
 
     for e in base_entries:
-        print(
-            f"🗑️ DELETING BASE ENTRY → "
-            f"{e.class_obj.name} | {day} | {slot} | "
-            f"{e.subject.name if e.subject else '-'}"
-        )
         db.session.delete(e)
 
 
@@ -142,14 +137,19 @@ def process_inputs():
         subject_map[subject_name] = subject
 
     # -------------------------------------------------
-    # 5️⃣ BASE TIMETABLES (🔥 LAB FIX HERE 🔥)
+    # 5️⃣ BASE TIMETABLES (FIXED SHEET FILTER)
     # -------------------------------------------------
     xls = pd.ExcelFile("uploads/timetables.xlsx")
 
     for sheet in xls.sheet_names:
-        cls = class_map.get(sheet.strip())
-        if not cls:
+
+        sheet_name = sheet.strip()
+
+        # 🔥 ONLY PROCESS VALID CLASS SHEETS
+        if sheet_name not in class_map:
             continue
+
+        cls = class_map.get(sheet_name)
 
         df = normalize(pd.read_excel(xls, sheet_name=sheet))
         day_col = df.columns[0]
@@ -159,6 +159,7 @@ def process_inputs():
             day = str(row[day_col]).strip()
 
             for slot in slots:
+
                 raw_slot = normalize_slot(slot)
                 value = row[slot]
 
@@ -167,8 +168,8 @@ def process_inputs():
 
                 subject_name = normalize_subject(value)
 
-                # ACTIVITY
-                if subject_name in ["activity", "activity hour"]:
+                # ---------------- ACTIVITY ----------------
+                if subject_name in ["activity", "activity_hour"]:
                     db.session.add(TimetableEntry(
                         class_id=cls.id,
                         subject_id=None,
@@ -182,10 +183,11 @@ def process_inputs():
                     ))
                     continue
 
-                # LAB ✅ KEEP SUBJECT
+                # ---------------- LAB ----------------
                 if subject_type.get(subject_name) == "lab":
 
                     subject = subject_map.get(subject_name)
+
                     if subject is None:
                         subject = Subject(
                             name=subject_name,
@@ -198,7 +200,7 @@ def process_inputs():
 
                     db.session.add(TimetableEntry(
                         class_id=cls.id,
-                        subject_id=subject.id,   # ✅ FIX
+                        subject_id=subject.id,
                         teacher_id=None,
                         room_id=None,
                         day=day,
@@ -209,8 +211,9 @@ def process_inputs():
                     ))
                     continue
 
-                # THEORY
+                # ---------------- THEORY ----------------
                 subject = subject_map.get(subject_name)
+
                 if subject is None:
                     subject = Subject(
                         name=subject_name,
@@ -246,8 +249,6 @@ def process_inputs():
     class_col = get_class_column(df)
     slot_col = get_slot_column(df)
 
-    print("\n========== PARALLEL INPUT ==========")
-
     for _, r in df.iterrows():
         cls = class_map.get(str(r[class_col]).strip())
         if not cls:
@@ -261,6 +262,7 @@ def process_inputs():
         delete_base_entry(cls.id, day, slot)
 
         subject = subject_map.get(subject_name)
+
         if subject is None:
             subject = Subject(
                 name=subject_name,
@@ -283,7 +285,6 @@ def process_inputs():
             is_floating=True
         ))
 
-        print(f"PARALLEL → {cls.name} | {day} | {slot} | {subject_name} | batch={batch}")
+    db.session.commit()
 
     print("\n========== INPUT PROCESSOR DONE ==========\n")
-    db.session.commit()

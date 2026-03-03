@@ -13,16 +13,19 @@ def allocate_rooms():
     ).all()
 
     permanent_rooms = Room.query.filter_by(is_permanent=True).all()
+
     occupied = set()
 
     for e in TimetableEntry.query.filter(TimetableEntry.room_id != None):
         occupied.add((e.day, normalize_slot(e.slot), e.room_id))
 
     for entry in floating_entries:
+
         entry.slot = normalize_slot(entry.slot)
         cls = Class.query.get(entry.class_id)
 
         for room in permanent_rooms:
+
             if room.capacity < cls.strength:
                 continue
 
@@ -47,3 +50,5 @@ def allocate_rooms():
             break
 
     db.session.commit()
+
+    print("\n========== ALLOCATOR END ==========")

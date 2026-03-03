@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Teacher Timetable{% endblock %}
+{% block title %}Class Timetable{% endblock %}
 
 {% block content %}
 
@@ -79,12 +79,6 @@
     margin-bottom: 4px;
   }
 
-  .meta {
-    font-size: 13px;
-    color: var(--muted);
-    margin-bottom: 6px;
-  }
-
   .room-tag {
     display: inline-block;
     font-size: 12px;
@@ -97,7 +91,7 @@
 </style>
 
 <div class="page-header">
-  <h2>Teacher Timetable</h2>
+  <h2>{{ class_name }} Timetable</h2>
   <p>Your weekly class schedule</p>
 </div>
 
@@ -118,7 +112,12 @@
       {% if e.slot not in lookup %}
           {% set _ = lookup.update({e.slot: {}}) %}
       {% endif %}
-      {% set _ = lookup[e.slot].update({e.day: e}) %}
+      {% if e.slot in lookup %}
+          {% if e.day not in lookup[e.slot] %}
+              {% set _ = lookup[e.slot].update({e.day: []}) %}
+          {% endif %}
+          {% set _ = lookup[e.slot][e.day].append(e) %}
+      {% endif %}
   {% endfor %}
 
   <table>
@@ -141,18 +140,16 @@
         {% for day in days %}
         <td>
           {% if lookup.get(slot) and lookup[slot].get(day) %}
-            {% set e = lookup[slot][day] %}
-            <div class="class-cell">
-              <div class="subject">
-                {{ e.subject.name if e.subject else '-' }}
+            {% for e in lookup[slot][day] %}
+              <div class="class-cell">
+                <div class="subject">
+                  {{ e.subject.name if e.subject else '-' }}
+                </div>
+                <span class="room-tag">
+                  {{ e.room.name if e.room else '—' }}
+                </span>
               </div>
-              <div class="meta">
-                {{ e.class_obj.name if e.class_obj else '-' }}
-              </div>
-              <span class="room-tag">
-                {{ e.room.name if e.room else '—' }}
-              </span>
-            </div>
+            {% endfor %}
           {% endif %}
         </td>
         {% endfor %}
