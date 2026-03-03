@@ -104,21 +104,44 @@ def login():
 def admin_dashboard():
 
     permanent_count = Class.query.filter_by(class_category="permanent").count()
-
     floating_count = Class.query.filter_by(class_category="floating").count()
 
-    allocated_count = (
-        TimetableEntry.query
-        .filter(TimetableEntry.room_id.isnot(None))
-        .distinct(TimetableEntry.class_id)
-        .count()
+    from sqlalchemy import func, case
+
+    subquery = (
+        db.session.query(
+            TimetableEntry.class_id,
+            TimetableEntry.day,
+            TimetableEntry.slot,
+            func.count(TimetableEntry.id).label("total"),
+            func.sum(
+                case(
+                    (TimetableEntry.room_id.isnot(None), 1),
+                    else_=0
+                )
+            ).label("allocated")
+        )
+        .join(Class, TimetableEntry.class_id == Class.id)
+        .filter(Class.class_category == "floating")
+        .group_by(
+            TimetableEntry.class_id,
+            TimetableEntry.day,
+            TimetableEntry.slot
+        )
+        .subquery()
+    )
+
+    fully_allocated_periods = (
+        db.session.query(func.count())
+        .filter(subquery.c.total == subquery.c.allocated)
+        .scalar()
     )
 
     return render_template(
         "home.html",
         permanent_count=permanent_count,
         floating_count=floating_count,
-        allocated_count=allocated_count
+        allocated_count=fully_allocated_periods
     )
 
 
