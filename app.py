@@ -229,7 +229,7 @@ def admin_upload():
         process_inputs()
         allocate_rooms()
 
-        flash("Files uploaded and timetable allocated successfully!", "success")
+        
 
         return redirect(url_for("view_floating_timetable"))
 
@@ -367,7 +367,7 @@ def delete_cancelled(id):
 
     allocate_rooms()
 
-    flash("Cancelled class removed and timetable restored!", "success")
+    
 
     return redirect(url_for("cancelled_classes"))
 
