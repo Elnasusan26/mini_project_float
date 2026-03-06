@@ -1,7 +1,9 @@
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import date
 
 db = SQLAlchemy()
+
 
 # ---------------- USER (AUTH) ----------------
 class User(db.Model):
@@ -10,12 +12,13 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
+
     role = db.Column(
         db.String(20),
         nullable=False
     )  # 'admin', 'teacher', 'student'
 
-    # Optional links (can be null)
+    # Optional links
     teacher_id = db.Column(
         db.Integer,
         db.ForeignKey("teacher.id"),
@@ -31,7 +34,7 @@ class User(db.Model):
     teacher = db.relationship("Teacher", backref="user", uselist=False)
     class_obj = db.relationship("Class", backref="students")
 
-    # Password helpers
+    # password helpers
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
@@ -62,6 +65,7 @@ class Room(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
     capacity = db.Column(db.Integer, nullable=False)
+
     is_permanent = db.Column(db.Boolean, default=True)
 
     owner_class_id = db.Column(
@@ -71,6 +75,9 @@ class Room(db.Model):
     )
 
     owner_class = db.relationship("Class", backref="rooms")
+
+    def __repr__(self):
+        return f"<Room {self.name}>"
 
 
 # ---------------- TEACHER ----------------
@@ -90,6 +97,7 @@ class Subject(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+
     is_lab = db.Column(db.Boolean, default=False)
 
     teacher_id = db.Column(
@@ -99,6 +107,9 @@ class Subject(db.Model):
     )
 
     teacher = db.relationship("Teacher", backref="subjects")
+
+    def __repr__(self):
+        return f"<Subject {self.name}>"
 
 
 # ---------------- TIMETABLE ENTRY ----------------
@@ -142,4 +153,36 @@ class TimetableEntry(db.Model):
     class_obj = db.relationship("Class", backref="timetable_entries")
     subject = db.relationship("Subject")
     teacher = db.relationship("Teacher")
-    room = db.relationship("Room") 
+    room = db.relationship("Room")
+
+    def __repr__(self):
+        return f"<TimetableEntry {self.class_id} {self.day} {self.slot}>"
+
+
+# ---------------- CANCELLED CLASS ----------------
+class CancelledClass(db.Model):
+    """
+    Stores cancelled classes for specific dates.
+    Used to dynamically free rooms and reallocate them.
+    """
+
+    __tablename__ = "cancelled_class"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    class_id = db.Column(
+        db.Integer,
+        db.ForeignKey("class.id"),
+        nullable=False
+    )
+
+    slot = db.Column(db.String(30), nullable=False)
+
+    date = db.Column(db.Date, nullable=False)
+
+    reason = db.Column(db.String(200), nullable=True)
+
+    class_obj = db.relationship("Class")
+
+    def __repr__(self):
+        return f"<CancelledClass {self.class_id} {self.date} {self.slot}>"

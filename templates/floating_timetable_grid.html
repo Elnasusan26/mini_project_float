@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Floating Class Timetable</title>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -36,47 +37,77 @@
         .unallocated {
             background-color: #ffe6e6;
         }
+
+        .cancelled {
+            background-color: #ffcccc;
+            color: #900;
+            font-weight: bold;
+        }
     </style>
 </head>
+
 <body>
 
 <h1>Floating Class Timetable</h1>
 
 {% for class_name, class_data in timetable.items() %}
-    <h2>Class: {{ class_name }}</h2>
+<h2>Class: {{ class_name }}</h2>
 
-    <table>
-        <tr>
-            <th>Day / Time</th>
-            {% for slot in slots %}
-                <th>{{ slot }}</th>
-            {% endfor %}
-        </tr>
+<table>
 
-        {% for day in days %}
-        <tr>
-            <th>{{ day }}</th>
+<tr>
+    <th>Day / Time</th>
+    {% for slot in slots %}
+        <th>{{ slot }}</th>
+    {% endfor %}
+</tr>
 
-            {% for slot in slots %}
-                {% if day in class_data and slot in class_data[day] %}
-                    {% set entries = class_data[day][slot] %}
+{% for day in days %}
+<tr>
 
-                    <td class="{{ 'allocated' if entries[0].allocated else 'unallocated' }}">
-                        <strong>
-                            {{ entries | map(attribute='subject') | join(' / ') }}
-                        </strong>
-                        <br>
-                        (
-                        {{ entries | map(attribute='room') | join(', ') }}
-                        )
-                    </td>
-                {% else %}
-                    <td>-</td>
-                {% endif %}
-            {% endfor %}
-        </tr>
-        {% endfor %}
-    </table>
+    <th>{{ day }}</th>
+
+    {% for slot in slots %}
+
+        {% set key = (class_name, day, slot) %}
+
+        {% if key in cancelled_lookup %}
+
+            <td class="cancelled">
+                ❌ CANCELLED
+            </td>
+
+        {% elif day in class_data and slot in class_data[day] %}
+
+            {% set entries = class_data[day][slot] %}
+            {% set rooms = entries | map(attribute='room') | list %}
+
+            <td class="{{ 'allocated' if rooms[0] != '-' else 'unallocated' }}">
+
+                <strong>
+                    {{ entries | map(attribute='subject') | join(' / ') }}
+                </strong>
+
+                <br>
+
+                (
+                {{ entries | map(attribute='room') | join(', ') }}
+                )
+
+            </td>
+
+        {% else %}
+
+            <td>-</td>
+
+        {% endif %}
+
+    {% endfor %}
+
+</tr>
+{% endfor %}
+
+</table>
 
 {% endfor %}
 

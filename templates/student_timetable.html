@@ -88,6 +88,15 @@
     background: rgba(0,0,0,0.06);
     color: var(--muted);
   }
+
+  .cancelled {
+    background: #ffe6e6;
+    border-radius: 12px;
+    padding: 14px;
+    color: #a10000;
+    font-weight: 700;
+  }
+
 </style>
 
 <div class="page-header">
@@ -98,6 +107,7 @@
 <div class="table-card">
 
   {% set days = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'] %}
+
   {% set slots = [
       '8.00_-_8.45',
       '9.10_-_9.55',
@@ -112,15 +122,16 @@
       {% if e.slot not in lookup %}
           {% set _ = lookup.update({e.slot: {}}) %}
       {% endif %}
-      {% if e.slot in lookup %}
-          {% if e.day not in lookup[e.slot] %}
-              {% set _ = lookup[e.slot].update({e.day: []}) %}
-          {% endif %}
-          {% set _ = lookup[e.slot][e.day].append(e) %}
+
+      {% if e.day not in lookup[e.slot] %}
+          {% set _ = lookup[e.slot].update({e.day: []}) %}
       {% endif %}
+
+      {% set _ = lookup[e.slot][e.day].append(e) %}
   {% endfor %}
 
   <table>
+
     <thead>
       <tr>
         <th>Time</th>
@@ -131,32 +142,51 @@
     </thead>
 
     <tbody>
+
       {% for slot in slots %}
       <tr>
+
         <td class="time-col">
           {{ slot | replace('_-_', ' – ') }}
         </td>
 
         {% for day in days %}
         <td>
-          {% if lookup.get(slot) and lookup[slot].get(day) %}
+
+          {% if (day, slot) in cancelled_lookup %}
+
+            <div class="cancelled">
+              ❌ CANCELLED
+            </div>
+
+          {% elif lookup.get(slot) and lookup[slot].get(day) %}
+
             {% for e in lookup[slot][day] %}
+
               <div class="class-cell">
+
                 <div class="subject">
                   {{ e.subject.name if e.subject else '-' }}
                 </div>
+
                 <span class="room-tag">
                   {{ e.room.name if e.room else '—' }}
                 </span>
+
               </div>
+
             {% endfor %}
+
           {% endif %}
+
         </td>
         {% endfor %}
 
       </tr>
       {% endfor %}
+
     </tbody>
+
   </table>
 
 </div>
