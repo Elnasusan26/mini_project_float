@@ -7,17 +7,23 @@ from collections import defaultdict
 from functools import wraps
 from datetime import datetime
 
-from models import db, User, Class, Room, Subject, TimetableEntry, CancelledClass
+from models import (
+    db, User, Class, Room, Subject,
+    TimetableEntry, CancelledClass, Notification
+)
+
 from input_processor import process_inputs
 from allocator import allocate_rooms
 from utils.normalize import normalize_slot
 
 
-# ---------------- APP INIT ----------------
+# ==============================================================
+# APP INIT
+# ==============================================================
+
 app = Flask(__name__)
 app.secret_key = "floated-secret"
 
-# ---------------- CONFIG ----------------
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -28,7 +34,10 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 db.init_app(app)
 
 
-# ---------------- FIXED SLOT ORDER ----------------
+# ==============================================================
+# CONSTANTS
+# ==============================================================
+
 TIME_SLOTS = list(map(normalize_slot, [
     "8.00-8.45",
     "9.10-9.55",
@@ -69,6 +78,31 @@ def role_required(role):
 
 
 # ==============================================================
+# NOTIFICATION CONTEXT (for bell)
+# ==============================================================
+
+@app.context_processor
+def inject_notifications():
+
+    if "user_id" not in session:
+        return dict(notifications=[], unread_count=0)
+
+    notifications = Notification.query.filter_by(
+        user_id=session["user_id"]
+    ).order_by(Notification.created_at.desc()).limit(5).all()
+
+    unread_count = Notification.query.filter_by(
+        user_id=session["user_id"],
+        is_read=False
+    ).count()
+
+    return dict(
+        notifications=notifications,
+        unread_count=unread_count
+    )
+
+
+# ==============================================================
 # LOGIN
 # ==============================================================
 
@@ -91,10 +125,10 @@ def login():
             if user.role == "admin":
                 return redirect(url_for("admin_dashboard"))
 
-            elif user.role == "teacher":
+            if user.role == "teacher":
                 return redirect(url_for("teacher_dashboard"))
 
-            elif user.role == "student":
+            if user.role == "student":
                 return redirect(url_for("student_dashboard"))
 
         flash("Invalid email or password", "error")
@@ -118,6 +152,10 @@ def admin_dashboard():
     floating_count = Class.query.filter_by(
         class_category="floating"
     ).count()
+
+    # -----------------------------------
+    # CALCULATE ALLOCATED CLASSES
+    # -----------------------------------
 
     from sqlalchemy import func, case
 
@@ -144,7 +182,7 @@ def admin_dashboard():
         .subquery()
     )
 
-    fully_allocated_periods = (
+    allocated_count = (
         db.session.query(func.count())
         .filter(subquery.c.total == subquery.c.allocated)
         .scalar()
@@ -154,7 +192,7 @@ def admin_dashboard():
         "home.html",
         permanent_count=permanent_count,
         floating_count=floating_count,
-        allocated_count=fully_allocated_periods
+        allocated_count=allocated_count
     )
 
 
@@ -212,12 +250,13 @@ def cancel_class():
     if request.method == "POST":
 
         class_id = int(request.form.get("class_id"))
-
         date_str = request.form.get("date")
         date = datetime.strptime(date_str, "%Y-%m-%d").date()
 
         slots = request.form.getlist("slots")
         reason = request.form.get("reason")
+
+        cls = Class.query.get(class_id)
 
         for slot in slots:
 
@@ -241,6 +280,22 @@ def cancel_class():
 
             db.session.add(cancelled)
 
+            # Create notifications
+            message = f"{cls.name} class cancelled on {date} ({slot})"
+
+            students = User.query.filter_by(
+                class_id=class_id,
+                role="student"
+            ).all()
+
+            for s in students:
+                db.session.add(Notification(user_id=s.id, message=message))
+
+            teachers = User.query.filter_by(role="teacher").all()
+
+            for t in teachers:
+                db.session.add(Notification(user_id=t.id, message=message))
+
         db.session.commit()
 
         allocate_rooms()
@@ -256,7 +311,7 @@ def cancel_class():
 
 
 # ==============================================================
-# VIEW CANCELLED CLASSES (NEW FEATURE)
+# VIEW CANCELLED CLASSES
 # ==============================================================
 
 @app.route("/admin/cancelled_classes")
@@ -278,7 +333,7 @@ def cancelled_classes():
 # DELETE CANCELLED CLASS
 # ==============================================================
 
-@app.route("/admin/delete_cancelled/<int:id>")
+@app.route("/admin/delete_cancelled/<int:id>", endpoint="delete_cancelled")
 @login_required
 @role_required("admin")
 def delete_cancelled(id):
@@ -289,11 +344,9 @@ def delete_cancelled(id):
     slot = normalize_slot(cancelled.slot)
     cancel_day = cancelled.date.strftime("%A").upper()
 
-    # delete cancellation
     db.session.delete(cancelled)
     db.session.commit()
 
-    # restore permanent room
     cls = Class.query.get(class_id)
 
     if cls and cls.class_category == "permanent":
@@ -312,7 +365,6 @@ def delete_cancelled(id):
 
             db.session.commit()
 
-    # re-run allocator for floating classes
     allocate_rooms()
 
     flash("Cancelled class removed and timetable restored!", "success")
@@ -349,20 +401,27 @@ def view_floating_timetable():
             "batch": e.batch
         })
 
+    # -------------------------------------------------
+    # GET CANCELLED CLASSES
+    # -------------------------------------------------
+
     today = datetime.today().date()
 
-    cancelled_classes = CancelledClass.query.filter_by(date=today).all()
+    cancelled = CancelledClass.query.filter(
+        CancelledClass.date >= today
+    ).all()
 
     cancelled_lookup = set()
 
-    for c in cancelled_classes:
+    for c in cancelled:
 
-        day = c.date.strftime("%A").upper()
+        cancel_day = c.date.strftime("%A").upper()
         slot = normalize_slot(c.slot)
 
-        cls = Class.query.get(c.class_id).name
+        cls = Class.query.get(c.class_id)
 
-        cancelled_lookup.add((cls, day, slot))
+        if cls:
+            cancelled_lookup.add((cls.name, cancel_day, slot))
 
     return render_template(
         "floating_timetable_grid.html",
@@ -371,7 +430,6 @@ def view_floating_timetable():
         days=DAYS,
         cancelled_lookup=cancelled_lookup
     )
-
 
 # ==============================================================
 # TEACHER DASHBOARD
@@ -384,22 +442,13 @@ def teacher_dashboard():
 
     user = User.query.get(session["user_id"])
 
-    if not user.teacher_id:
-        return "No teacher linked to this account", 400
-
     entries = TimetableEntry.query.join(Subject).filter(
         Subject.teacher_id == user.teacher_id
     ).all()
 
-    day_order = {day: i for i, day in enumerate(DAYS)}
-    slot_order = {slot: i for i, slot in enumerate(TIME_SLOTS)}
-
-    entries.sort(
-        key=lambda e: (
-            day_order.get(e.day, 99),
-            slot_order.get(normalize_slot(e.slot), 99)
-        )
-    )
+    # -------------------------------------------------
+    # CANCELLED LOOKUP
+    # -------------------------------------------------
 
     today = datetime.today().date()
 
@@ -419,7 +468,6 @@ def teacher_dashboard():
     return render_template(
         "teacher_timetable.html",
         entries=entries,
-        teacher_name=user.email.split("@")[0].capitalize(),
         cancelled_lookup=cancelled_lookup
     )
 
@@ -435,24 +483,15 @@ def student_dashboard():
 
     user = User.query.get(session["user_id"])
 
-    if not user.class_id:
-        return "No class linked to this account", 400
-
     cls = Class.query.get(user.class_id)
 
     entries = TimetableEntry.query.filter_by(
         class_id=user.class_id
     ).all()
 
-    day_order = {day: i for i, day in enumerate(DAYS)}
-    slot_order = {slot: i for i, slot in enumerate(TIME_SLOTS)}
-
-    entries.sort(
-        key=lambda e: (
-            day_order.get(e.day, 99),
-            slot_order.get(normalize_slot(e.slot), 99)
-        )
-    )
+    # -------------------------------------------------
+    # CANCELLED LOOKUP
+    # -------------------------------------------------
 
     today = datetime.today().date()
 
@@ -476,7 +515,6 @@ def student_dashboard():
         class_name=cls.name,
         cancelled_lookup=cancelled_lookup
     )
-
 
 # ==============================================================
 # LOGOUT

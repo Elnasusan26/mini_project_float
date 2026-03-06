@@ -1,189 +1,346 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>FloatED | {% block title %}{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<title>FloatED | {% block title %}{% endblock %}</title>
 
-    :root {
-      --navy:    #1a3c4d;
-      --teal:    #1a7f7f;
-      --teal-lt: #e6f5f5;
-      --white:   #ffffff;
-      --bg:      #f0f4f8;
-      --text:    #1e2d3d;
-      --muted:   #6b7f90;
-      --border:  #dde5ed;
-    }
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
 
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      min-height: 100vh;
-    }
+<style>
 
-    .sidebar {
-      width: 240px;
-      background: var(--white);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 28px 16px;
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-    }
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 
-    .sidebar-top {
-      padding: 0 8px 24px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--navy);
-      margin-bottom: 4px;
-    }
-
-    .logo::before {
-      content: '🎓';
-      width: 34px; height: 34px;
-      background: var(--teal);
-      border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
-    }
-
-    .subtitle {
-      font-size: 12px;
-      color: var(--muted);
-      padding-left: 44px;
-    }
-
-    .sidebar-nav {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-top: 8px;
-    }
-
-    .sidebar-nav a {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 11px 14px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--muted);
-      text-decoration: none;
-      transition: background .15s, color .15s;
-    }
-
-    .sidebar-nav a:hover { background: var(--bg); color: var(--text); }
-    .sidebar-nav a.active { background: var(--teal-lt); color: var(--teal); font-weight: 600; }
-
-    .sidebar-bottom {
-      border-top: 1px solid var(--border);
-      padding-top: 16px;
-    }
-
-    .sidebar-bottom a {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 11px 14px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--muted);
-      text-decoration: none;
-      transition: background .15s, color .15s;
-    }
-
-    .sidebar-bottom a:hover { background: #fff0f0; color: #c0392b; }
-
-    .main-content {
-  margin-left: 240px;
-  width: calc(100% - 240px);
-  padding: 36px;
-  min-height: 100vh;
+:root{
+--navy:#1a3c4d;
+--teal:#1a7f7f;
+--teal-lt:#e6f5f5;
+--white:#ffffff;
+--bg:#f0f4f8;
+--text:#1e2d3d;
+--muted:#6b7f90;
+--border:#dde5ed;
 }
-  </style>
+
+body{
+font-family:'Segoe UI',system-ui,sans-serif;
+background:var(--bg);
+color:var(--text);
+display:flex;
+min-height:100vh;
+}
+
+.layout{
+display:flex;
+width:100%;
+}
+
+.sidebar{
+width:240px;
+background:var(--white);
+border-right:1px solid var(--border);
+display:flex;
+flex-direction:column;
+justify-content:space-between;
+padding:28px 16px;
+position:fixed;
+top:0;
+left:0;
+bottom:0;
+}
+
+.sidebar-top{
+padding:0 8px 24px;
+border-bottom:1px solid var(--border);
+margin-bottom:20px;
+}
+
+.logo{
+display:flex;
+align-items:center;
+gap:10px;
+font-size:20px;
+font-weight:700;
+color:var(--navy);
+margin-bottom:4px;
+}
+
+.logo::before{
+content:'🎓';
+width:34px;
+height:34px;
+background:var(--teal);
+border-radius:9px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:16px;
+}
+
+.subtitle{
+font-size:12px;
+color:var(--muted);
+padding-left:44px;
+}
+
+.sidebar-nav{
+flex:1;
+display:flex;
+flex-direction:column;
+gap:4px;
+margin-top:8px;
+}
+
+.sidebar-nav a{
+display:flex;
+align-items:center;
+gap:12px;
+padding:11px 14px;
+border-radius:10px;
+font-size:14px;
+font-weight:500;
+color:var(--muted);
+text-decoration:none;
+transition:background .15s,color .15s;
+}
+
+.sidebar-nav a:hover{ background:var(--bg); color:var(--text); }
+
+.sidebar-nav a.active{
+background:var(--teal-lt);
+color:var(--teal);
+font-weight:600;
+}
+
+.sidebar-bottom{
+border-top:1px solid var(--border);
+padding-top:16px;
+}
+
+.sidebar-bottom a{
+display:flex;
+align-items:center;
+gap:8px;
+padding:11px 14px;
+border-radius:10px;
+font-size:14px;
+font-weight:500;
+color:var(--muted);
+text-decoration:none;
+transition:background .15s,color .15s;
+}
+
+.sidebar-bottom a:hover{
+background:#fff0f0;
+color:#c0392b;
+}
+
+.main-content{
+margin-left:240px;
+width:calc(100% - 240px);
+padding:36px;
+min-height:100vh;
+position:relative;
+}
+
+/* 🔔 Notification Bell */
+
+.notification-wrapper{
+position:absolute;
+top:20px;
+right:30px;
+}
+
+.bell{
+font-size:22px;
+cursor:pointer;
+position:relative;
+}
+
+.badge{
+position:absolute;
+top:-6px;
+right:-8px;
+background:red;
+color:white;
+font-size:11px;
+padding:2px 6px;
+border-radius:50%;
+}
+
+.notification-dropdown{
+display:none;
+position:absolute;
+right:0;
+top:30px;
+width:300px;
+background:white;
+border:1px solid var(--border);
+border-radius:8px;
+box-shadow:0 5px 15px rgba(0,0,0,0.2);
+z-index:100;
+overflow:hidden;
+}
+
+.notification-header{
+background:var(--navy);
+color:white;
+padding:10px;
+font-weight:600;
+font-size:14px;
+}
+
+.notification-item{
+padding:12px;
+border-bottom:1px solid var(--border);
+font-size:13px;
+}
+
+.notification-item small{
+display:block;
+color:var(--muted);
+font-size:11px;
+margin-top:3px;
+}
+
+.notification-item:hover{
+background:#f5f7fa;
+}
+
+</style>
 </head>
 
 <body>
 
 <div class="layout">
 
-  <aside class="sidebar">
-    <div>
-      <div class="sidebar-top">
-        <h2 class="logo">FloatED</h2>
-        <span class="subtitle">
-          {{ session.role.capitalize() if session.role else "" }}
-        </span>
-      </div>
+<!-- SIDEBAR -->
+<aside class="sidebar">
 
-      <nav class="sidebar-nav">
+<div>
 
-        {% if session.role == "admin" %}
-          <a href="{{ url_for('admin_dashboard') }}"
-             class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
-            Dashboard
-          </a>
+<div class="sidebar-top">
+<h2 class="logo">FloatED</h2>
+<span class="subtitle">
+{{ session.role.capitalize() if session.role else "" }}
+</span>
+</div>
 
-          <a href="{{ url_for('view_floating_timetable') }}"
-             class="{% if request.endpoint == 'view_floating_timetable' %}active{% endif %}">
-            Browse Class Timetable
-          </a>
+<nav class="sidebar-nav">
 
-        {% elif session.role == "teacher" %}
-          <a href="{{ url_for('teacher_dashboard') }}"
-             class="{% if request.endpoint == 'teacher_dashboard' %}active{% endif %}">
-            Dashboard
-          </a>
+{% if session.role == "admin" %}
 
-          <a href="{{ url_for('view_floating_timetable') }}">
-            Browse Class Timetable
-          </a>
+<a href="{{ url_for('admin_dashboard') }}"
+class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+Dashboard
+</a>
 
-        {% elif session.role == "student" %}
-          <a href="{{ url_for('student_dashboard') }}"
-             class="{% if request.endpoint == 'student_dashboard' %}active{% endif %}">
-            Dashboard
-          </a>
+<a href="{{ url_for('view_floating_timetable') }}"
+class="{% if request.endpoint == 'view_floating_timetable' %}active{% endif %}">
+Browse Class Timetable
+</a>
 
-          <a href="{{ url_for('view_floating_timetable') }}">
-            Browse Class Timetable
-          </a>
-        {% endif %}
+{% elif session.role == "teacher" %}
 
-      </nav>
-    </div>
+<a href="{{ url_for('teacher_dashboard') }}"
+class="{% if request.endpoint == 'teacher_dashboard' %}active{% endif %}">
+Dashboard
+</a>
 
-    <div class="sidebar-bottom">
-      <a href="{{ url_for('logout') }}">
-        Logout
-      </a>
-    </div>
-  </aside>
+<a href="{{ url_for('view_floating_timetable') }}">
+Browse Class Timetable
+</a>
 
-  <main class="main-content">
-    {% block content %}{% endblock %}
-  </main>
+{% elif session.role == "student" %}
+
+<a href="{{ url_for('student_dashboard') }}"
+class="{% if request.endpoint == 'student_dashboard' %}active{% endif %}">
+Dashboard
+</a>
+
+<a href="{{ url_for('view_floating_timetable') }}">
+Browse Class Timetable
+</a>
+
+{% endif %}
+
+</nav>
 
 </div>
+
+<div class="sidebar-bottom">
+<a href="{{ url_for('logout') }}">
+Logout
+</a>
+</div>
+
+</aside>
+
+
+<!-- MAIN CONTENT -->
+<main class="main-content">
+
+{% if session.role != "admin" %}
+
+<div class="notification-wrapper">
+
+<div class="bell" onclick="toggleNotifications()">
+🔔
+
+{% if unread_count > 0 %}
+<span class="badge">{{ unread_count }}</span>
+{% endif %}
+
+</div>
+
+<div id="notificationMenu" class="notification-dropdown">
+
+<div class="notification-header">
+Notifications
+</div>
+
+{% for n in notifications %}
+
+<div class="notification-item">
+{{ n.message }}
+<small>{{ n.created_at.strftime("%d %b %Y %H:%M") }}</small>
+</div>
+
+{% else %}
+
+<div class="notification-item">
+No notifications
+</div>
+
+{% endfor %}
+
+</div>
+
+</div>
+
+{% endif %}
+
+{% block content %}{% endblock %}
+
+</main>
+
+</div>
+
+<script>
+
+function toggleNotifications(){
+
+let menu=document.getElementById("notificationMenu");
+
+if(menu.style.display==="block"){
+menu.style.display="none";
+}
+else{
+menu.style.display="block";
+}
+
+}
+
+</script>
 
 </body>
 </html>

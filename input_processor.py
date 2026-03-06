@@ -1,6 +1,7 @@
 import pandas as pd
 from models import db, Class, Room, Teacher, Subject, TimetableEntry, User
 from utils.normalize import normalize_slot, normalize_subject
+from models import Notification
 
 
 # -------------------------------------------------
@@ -56,6 +57,7 @@ def process_inputs():
     # -------------------------------------------------
     # RESET ACADEMIC TABLES (NOT USERS)
     # -------------------------------------------------
+    Notification.query.delete()
     TimetableEntry.query.delete()
     Subject.query.delete()
     Teacher.query.delete()

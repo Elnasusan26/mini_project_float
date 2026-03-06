@@ -4,193 +4,193 @@
 {% block content %}
 
 <style>
-  .page-header {
-    margin-bottom: 32px;
-  }
+.page-header { margin-bottom: 32px; }
 
-  .page-header h2 {
-    font-size: 30px;
-    font-weight: 700;
-    color: var(--navy);
-    margin-bottom: 6px;
-  }
+.page-header h2 {
+font-size: 30px;
+font-weight: 700;
+color: var(--navy);
+margin-bottom: 6px;
+}
 
-  .page-header p {
-    font-size: 15px;
-    color: var(--muted);
-  }
+.page-header p {
+font-size: 15px;
+color: var(--muted);
+}
 
-  .table-card {
-    background: #fff;
-    border-radius: 18px;
-    border: 1px solid var(--border);
-    padding: 28px;
-    box-shadow: 0 4px 18px rgba(0,0,0,0.04);
-  }
+.table-card {
+background:#fff;
+border-radius:18px;
+border:1px solid var(--border);
+padding:28px;
+box-shadow:0 4px 18px rgba(0,0,0,0.04);
+}
 
-  table {
-    border-collapse: collapse;
-    width: 100%;
-  }
+table{
+border-collapse:collapse;
+width:100%;
+}
 
-  thead th {
-    background: var(--navy);
-    color: #fff;
-    font-weight: 600;
-    font-size: 14px;
-    padding: 16px;
-    text-align: center;
-  }
+thead th{
+background:var(--navy);
+color:#fff;
+font-weight:600;
+font-size:14px;
+padding:16px;
+text-align:center;
+}
 
-  thead th:first-child {
-    background: #f9fafb;
-    color: var(--muted);
-    text-align: left;
-  }
+thead th:first-child{
+background:#f9fafb;
+color:var(--muted);
+text-align:left;
+}
 
-  tbody td {
-    padding: 18px 14px;
-    border-bottom: 1px solid var(--border);
-    text-align: center;
-    vertical-align: top;
-  }
+tbody td{
+padding:18px 14px;
+border-bottom:1px solid var(--border);
+text-align:center;
+vertical-align:top;
+}
 
-  tbody td.time-col {
-    text-align: left;
-    font-weight: 600;
-    color: var(--muted);
-    white-space: nowrap;
-  }
+.day-col{
+text-align:left;
+font-weight:600;
+color:var(--muted);
+}
 
-  .class-cell {
-    background: #f9fafb;
-    border-radius: 12px;
-    padding: 14px;
-    transition: all 0.2s ease;
-  }
+.class-cell{
+background:#f9fafb;
+border-radius:12px;
+padding:14px;
+}
 
-  .class-cell:hover {
-    background: #eef3f7;
-  }
+.subject{
+font-weight:700;
+font-size:15px;
+margin-bottom:4px;
+}
 
-  .subject {
-    font-weight: 700;
-    font-size: 15px;
-    margin-bottom: 4px;
-  }
+.meta{
+font-size:13px;
+color:var(--muted);
+margin-bottom:6px;
+}
 
-  .meta {
-    font-size: 13px;
-    color: var(--muted);
-    margin-bottom: 6px;
-  }
+.room-tag{
+display:inline-block;
+font-size:12px;
+font-weight:600;
+padding:4px 10px;
+border-radius:6px;
+background:rgba(0,0,0,0.06);
+color:var(--muted);
+}
 
-  .room-tag {
-    display: inline-block;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 6px;
-    background: rgba(0,0,0,0.06);
-    color: var(--muted);
-  }
-
-  .cancelled {
-    background: #ffe6e6;
-    border-radius: 12px;
-    padding: 14px;
-    color: #a10000;
-    font-weight: 700;
-  }
+.cancelled{
+background:#ffe6e6;
+border-radius:12px;
+padding:14px;
+color:#a10000;
+font-weight:700;
+}
 </style>
 
+
 <div class="page-header">
-  <h2>Teacher Timetable</h2>
-  <p>Your weekly class schedule</p>
+<h2>Teacher Timetable</h2>
+<p>Your weekly class schedule</p>
 </div>
+
 
 <div class="table-card">
 
-  {% set days = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'] %}
+{% set days=['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'] %}
 
-  {% set slots = [
-      '8.00_-_8.45',
-      '9.10_-_9.55',
-      '10.00_-_10.45',
-      '10.50_-_11.35',
-      '11.55_-_12.40',
-      '12.45_-_1.30'
-  ] %}
+{% set slots=[
+'8.00_-_8.45',
+'9.10_-_9.55',
+'10.00_-_10.45',
+'10.50_-_11.35',
+'11.55_-_12.40',
+'12.45_-_1.30'
+] %}
 
-  {% set lookup = {} %}
-  {% for e in entries %}
-      {% if e.slot not in lookup %}
-          {% set _ = lookup.update({e.slot: {}}) %}
-      {% endif %}
-      {% set _ = lookup[e.slot].update({e.day: e}) %}
-  {% endfor %}
+{% set lookup={} %}
+{% for e in entries %}
+{% if e.day not in lookup %}
+{% set _ = lookup.update({e.day:{}}) %}
+{% endif %}
+{% set _ = lookup[e.day].update({e.slot:e}) %}
+{% endfor %}
 
-  <table>
-    <thead>
-      <tr>
-        <th>Time</th>
-        {% for day in days %}
-          <th>{{ day }}</th>
-        {% endfor %}
-      </tr>
-    </thead>
 
-    <tbody>
+<table>
 
-      {% for slot in slots %}
-      <tr>
+<thead>
+<tr>
+<th>Day</th>
 
-        <td class="time-col">
-          {{ slot | replace('_-_', ' – ') }}
-        </td>
+{% for slot in slots %}
+<th>{{slot | replace('_-_',' – ')}}</th>
+{% endfor %}
 
-        {% for day in days %}
-        <td>
+</tr>
+</thead>
 
-          {% set e = lookup.get(slot, {}).get(day) %}
 
-          {% if e and (e.class_id, day, slot) in cancelled_lookup %}
+<tbody>
 
-            <div class="cancelled">
-              ❌ CANCELLED
-              <div class="meta">
-                {{ e.class_obj.name if e.class_obj else '-' }}
-              </div>
-            </div>
+{% for day in days %}
+<tr>
 
-          {% elif e %}
+<td class="day-col">{{day}}</td>
 
-            <div class="class-cell">
+{% for slot in slots %}
 
-              <div class="subject">
-                {{ e.subject.name if e.subject else '-' }}
-              </div>
+<td>
 
-              <div class="meta">
-                {{ e.class_obj.name if e.class_obj else '-' }}
-              </div>
+{% set e = lookup.get(day,{}).get(slot) %}
 
-              <span class="room-tag">
-                {{ e.room.name if e.room else '—' }}
-              </span>
+{% if e and (e.class_id,day,slot) in cancelled_lookup %}
 
-            </div>
+<div class="cancelled">
+❌ CANCELLED
+<div class="meta">
+{{e.class_obj.name if e.class_obj else '-'}}
+</div>
+</div>
 
-          {% endif %}
+{% elif e %}
 
-        </td>
-        {% endfor %}
+<div class="class-cell">
 
-      </tr>
-      {% endfor %}
+<div class="subject">
+{{e.subject.name if e.subject else '-'}}
+</div>
 
-    </tbody>
-  </table>
+<div class="meta">
+{{e.class_obj.name if e.class_obj else '-'}}
+</div>
+
+<span class="room-tag">
+{{e.room.name if e.room else '—'}}
+</span>
+
+</div>
+
+{% endif %}
+
+</td>
+
+{% endfor %}
+
+</tr>
+{% endfor %}
+
+</tbody>
+
+</table>
 
 </div>
 
