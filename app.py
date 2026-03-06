@@ -223,7 +223,6 @@ def cancel_class():
 
             slot = normalize_slot(slot)
 
-            # prevent duplicates
             existing = CancelledClass.query.filter_by(
                 class_id=class_id,
                 slot=slot,
@@ -248,7 +247,7 @@ def cancel_class():
 
         flash("Class cancelled and rooms reallocated!", "success")
 
-        return redirect(url_for("admin_dashboard"))
+        return redirect(url_for("cancelled_classes"))
 
     return render_template(
         "admin_cancel_class.html",
@@ -257,7 +256,72 @@ def cancel_class():
 
 
 # ==============================================================
-# VIEW FULL TIMETABLE
+# VIEW CANCELLED CLASSES (NEW FEATURE)
+# ==============================================================
+
+@app.route("/admin/cancelled_classes")
+@login_required
+@role_required("admin")
+def cancelled_classes():
+
+    cancelled = CancelledClass.query.order_by(
+        CancelledClass.date.desc()
+    ).all()
+
+    return render_template(
+        "cancelled_classes.html",
+        cancelled=cancelled
+    )
+
+
+# ==============================================================
+# DELETE CANCELLED CLASS
+# ==============================================================
+
+@app.route("/admin/delete_cancelled/<int:id>")
+@login_required
+@role_required("admin")
+def delete_cancelled(id):
+
+    cancelled = CancelledClass.query.get_or_404(id)
+
+    class_id = cancelled.class_id
+    slot = normalize_slot(cancelled.slot)
+    cancel_day = cancelled.date.strftime("%A").upper()
+
+    # delete cancellation
+    db.session.delete(cancelled)
+    db.session.commit()
+
+    # restore permanent room
+    cls = Class.query.get(class_id)
+
+    if cls and cls.class_category == "permanent":
+
+        room = Room.query.filter_by(owner_class_id=class_id).first()
+
+        if room:
+            entries = TimetableEntry.query.filter_by(
+                class_id=class_id,
+                day=cancel_day,
+                slot=slot
+            ).all()
+
+            for e in entries:
+                e.room_id = room.id
+
+            db.session.commit()
+
+    # re-run allocator for floating classes
+    allocate_rooms()
+
+    flash("Cancelled class removed and timetable restored!", "success")
+
+    return redirect(url_for("cancelled_classes"))
+
+
+# ==============================================================
+# VIEW FLOATING TIMETABLE
 # ==============================================================
 
 @app.route("/view/timetable")
@@ -285,10 +349,6 @@ def view_floating_timetable():
             "batch": e.batch
         })
 
-    # ---------------------------------------
-    # FETCH CANCELLED CLASSES (TODAY)
-    # ---------------------------------------
-
     today = datetime.today().date()
 
     cancelled_classes = CancelledClass.query.filter_by(date=today).all()
@@ -312,6 +372,7 @@ def view_floating_timetable():
         cancelled_lookup=cancelled_lookup
     )
 
+
 # ==============================================================
 # TEACHER DASHBOARD
 # ==============================================================
@@ -330,9 +391,6 @@ def teacher_dashboard():
         Subject.teacher_id == user.teacher_id
     ).all()
 
-    # -------------------------
-    # SORTING
-    # -------------------------
     day_order = {day: i for i, day in enumerate(DAYS)}
     slot_order = {slot: i for i, slot in enumerate(TIME_SLOTS)}
 
@@ -343,9 +401,6 @@ def teacher_dashboard():
         )
     )
 
-    # -------------------------
-    # CANCELLED LOOKUP
-    # -------------------------
     today = datetime.today().date()
 
     cancelled = CancelledClass.query.filter(
@@ -367,6 +422,7 @@ def teacher_dashboard():
         teacher_name=user.email.split("@")[0].capitalize(),
         cancelled_lookup=cancelled_lookup
     )
+
 
 # ==============================================================
 # STUDENT DASHBOARD
@@ -398,9 +454,6 @@ def student_dashboard():
         )
     )
 
-    # -------------------------
-    # CANCELLED LOOKUP
-    # -------------------------
     today = datetime.today().date()
 
     cancelled = CancelledClass.query.filter(

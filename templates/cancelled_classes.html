@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Cancelled Classes{% endblock %}
+
+{% block content %}
+
+<style>
+
+.page-header{
+margin-bottom:30px;
+}
+
+.page-header h2{
+font-size:28px;
+font-weight:700;
+color:var(--navy);
+}
+
+.table-card{
+background:#fff;
+border-radius:18px;
+border:1px solid var(--border);
+padding:28px;
+box-shadow:0 4px 18px rgba(0,0,0,0.04);
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+thead th{
+background:var(--navy);
+color:#fff;
+padding:14px;
+font-size:14px;
+}
+
+tbody td{
+padding:14px;
+border-bottom:1px solid var(--border);
+text-align:center;
+}
+
+.status{
+background:#ffe6e6;
+color:#a10000;
+padding:4px 10px;
+border-radius:6px;
+font-weight:600;
+}
+
+.delete-btn{
+background:#e74c3c;
+color:#fff;
+padding:6px 12px;
+border-radius:6px;
+text-decoration:none;
+}
+
+</style>
+
+<div class="page-header">
+<h2>Cancelled Classes</h2>
+</div>
+
+<div class="table-card">
+
+<table>
+
+<thead>
+<tr>
+<th>Sl.No</th>
+<th>Class</th>
+<th>Date</th>
+<th>Slot</th>
+<th>Reason</th>
+<th>Status</th>
+<th>Delete</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for c in cancelled %}
+
+<tr>
+
+<td>{{ loop.index }}</td>
+
+<td>
+{{ c.class_obj.name }}
+</td>
+
+<td>
+{{ c.date }}
+</td>
+
+<td>
+{{ c.slot }}
+</td>
+
+<td>
+{{ c.reason if c.reason else "-" }}
+</td>
+
+<td>
+<span class="status">Cancelled</span>
+</td>
+
+<td>
+<a href="{{ url_for('delete_cancelled', id=c.id) }}" class="delete-btn">
+Delete
+</a>
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% endblock %}

@@ -203,6 +203,7 @@
         <a href="/admin/cancel_class" {% if request.path == '/admin/cancel_class' %}class="active"{% endif %}>
           Cancel Class
         </a>
+        <a href="{{ url_for('cancelled_classes') }}">View Cancelled Classes</a>
 
       </nav>
     </div>
