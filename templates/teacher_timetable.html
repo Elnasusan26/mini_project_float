@@ -191,7 +191,13 @@ BUILD LOOKUP TABLE
 </div>
 
 <span class="room-tag">
-{{e.room.name if e.room else '—'}}
+{% if e.lab_rooms %}
+{{ e.lab_rooms }}
+{% elif e.room %}
+{{ e.room.name }}
+{% else %}
+—
+{% endif %}
 </span>
 
 </div>
