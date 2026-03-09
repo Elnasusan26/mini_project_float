@@ -444,14 +444,14 @@ def teacher_dashboard():
 
     user = User.query.get(session["user_id"])
 
-    entries = TimetableEntry.query.join(Subject).filter(
-        Subject.teacher_id == user.teacher_id
-    ).all()
+    entries = (
+        TimetableEntry.query
+        .join(Subject, TimetableEntry.subject_id == Subject.id)
+        .filter(Subject.teacher_id == user.teacher_id)
+        .all()
+    )
 
-    # -------------------------------------------------
     # CANCELLED LOOKUP
-    # -------------------------------------------------
-
     today = datetime.today().date()
 
     cancelled = CancelledClass.query.filter(
@@ -461,7 +461,6 @@ def teacher_dashboard():
     cancelled_lookup = set()
 
     for c in cancelled:
-
         cancel_day = c.date.strftime("%A").upper()
         slot = normalize_slot(c.slot)
 

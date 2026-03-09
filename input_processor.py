@@ -28,13 +28,14 @@ def get_slot_column(df):
     for c in ["slot", "period", "time", "time_slot"]:
         if c in df.columns:
             return c
-    raise ValueError(f"No slot/period column found. Columns: {list(df.columns)}")
+    raise ValueError(f"No slot column found. Columns: {list(df.columns)}")
 
 
 # -------------------------------------------------
 # PARALLEL CLEANUP HELPER
 # -------------------------------------------------
 def delete_base_entry(class_id, day, slot):
+
     base_entries = TimetableEntry.query.filter(
         TimetableEntry.class_id == class_id,
         TimetableEntry.day == day,
@@ -54,9 +55,7 @@ def process_inputs():
 
     print("\n========== INPUT PROCESSOR START ==========\n")
 
-    # -------------------------------------------------
-    # RESET ACADEMIC TABLES (NOT USERS)
-    # -------------------------------------------------
+    # RESET ACADEMIC TABLES
     Notification.query.delete()
     TimetableEntry.query.delete()
     Subject.query.delete()
@@ -74,14 +73,18 @@ def process_inputs():
     class_map = {}
 
     for _, r in df.iterrows():
+
         cls = Class(
             name=str(r[class_col]).strip(),
             strength=int(r["strength"]),
             class_category=str(r["class_category"]).lower()
         )
+
         db.session.add(cls)
         db.session.flush()
+
         class_map[cls.name] = cls
+
 
     # -------------------------------------------------
     # 2️⃣ ROOMS
@@ -90,7 +93,9 @@ def process_inputs():
     class_col = get_class_column(df)
 
     for _, r in df.iterrows():
+
         cls = class_map.get(str(r[class_col]).strip())
+
         if not cls:
             continue
 
@@ -101,42 +106,102 @@ def process_inputs():
             owner_class_id=cls.id
         ))
 
+
     # -------------------------------------------------
     # 3️⃣ SUBJECT TYPES
     # -------------------------------------------------
     df = normalize(pd.read_excel("uploads/class_type.xlsx"))
+
     subject_type = {
         normalize_subject(r["subject"]): str(r["type"]).lower()
         for _, r in df.iterrows()
     }
 
-    # -------------------------------------------------
+
+   # -------------------------------------------------
     # 4️⃣ TEACHERS + SUBJECTS
     # -------------------------------------------------
-    df = normalize(pd.read_excel("uploads/teacher_subject_mapping.xlsx"))
+    df = pd.read_excel("uploads/teacher_subject_mapping.xlsx")
+
+    df.columns = (
+        df.columns.astype(str)
+        .str.strip()
+        .str.lower()
+        .str.replace(" ", "_")
+    )
+
+    print("Teacher Mapping Columns:", df.columns.tolist())  # debug
+
+    # Validate required columns
+    required_columns = ["faculty", "subject"]
+
+    for col in required_columns:
+        if col not in df.columns:
+            raise Exception(f"Column '{col}' missing in teacher_subject_mapping.xlsx")
 
     teacher_map = {}
     subject_map = {}
 
     for _, r in df.iterrows():
-        faculty = str(r["faculty"]).strip()
-        subject_name = normalize_subject(r["subject"])
 
+        faculty = str(r.get("faculty", "")).strip()
+
+        if not faculty:
+            continue
+
+        subject_name = normalize_subject(str(r.get("subject", "")).strip())
+
+        # -----------------------------
+        # GET OR CREATE TEACHER
+        # -----------------------------
         teacher = teacher_map.get(faculty)
+
         if not teacher:
+
             teacher = Teacher(name=faculty)
+
             db.session.add(teacher)
             db.session.flush()
+
             teacher_map[faculty] = teacher
 
+            # -----------------------------
+            # AUTO CREATE TEACHER LOGIN
+            # -----------------------------
+            email = faculty.lower().replace(" ", "") + "@college.edu"
+
+            existing_user = User.query.filter_by(email=email).first()
+
+            if not existing_user:
+
+                teacher_user = User(
+                    email=email,
+                    role="teacher",
+                    teacher_id=teacher.id
+                )
+
+                teacher_user.set_password("teacher123")
+
+                db.session.add(teacher_user)
+
+        # -----------------------------
+        # CREATE SUBJECT
+        # -----------------------------
         subject = Subject(
             name=subject_name,
             is_lab=(subject_type.get(subject_name) == "lab"),
             teacher_id=teacher.id
         )
+
         db.session.add(subject)
         db.session.flush()
+
         subject_map[subject_name] = subject
+
+    # Commit all changes
+    db.session.commit()
+
+    print("Teachers and subjects processed successfully!")
 
     # -------------------------------------------------
     # 5️⃣ BASE TIMETABLES
@@ -150,13 +215,15 @@ def process_inputs():
         if sheet_name not in class_map:
             continue
 
-        cls = class_map.get(sheet_name)
+        cls = class_map[sheet_name]
 
         df = normalize(pd.read_excel(xls, sheet_name=sheet))
+
         day_col = df.columns[0]
         slots = df.columns[1:]
 
         for _, row in df.iterrows():
+
             day = str(row[day_col]).strip()
 
             for slot in slots:
@@ -169,8 +236,10 @@ def process_inputs():
 
                 subject_name = normalize_subject(value)
 
+
                 # ACTIVITY
                 if subject_name in ["activity", "activity_hour"]:
+
                     db.session.add(TimetableEntry(
                         class_id=cls.id,
                         subject_id=None,
@@ -179,7 +248,9 @@ def process_inputs():
                         day=day,
                         slot=raw_slot
                     ))
+
                     continue
+
 
                 # LAB
                 if subject_type.get(subject_name) == "lab":
@@ -191,31 +262,44 @@ def process_inputs():
                             name=subject_name,
                             is_lab=True
                         )
+
                         db.session.add(subject)
                         db.session.flush()
+
                         subject_map[subject_name] = subject
 
                     db.session.add(TimetableEntry(
                         class_id=cls.id,
                         subject_id=subject.id,
+                        teacher_id=subject.teacher_id,
                         day=day,
                         slot=raw_slot,
                         is_lab_hour=True
                     ))
+
                     continue
+
 
                 # THEORY
                 subject = subject_map.get(subject_name)
 
                 if subject is None:
+
                     subject = Subject(name=subject_name)
+
                     db.session.add(subject)
                     db.session.flush()
+
                     subject_map[subject_name] = subject
 
                 room_id = None
+
                 if cls.class_category == "permanent":
-                    room = Room.query.filter_by(owner_class_id=cls.id).first()
+
+                    room = Room.query.filter_by(
+                        owner_class_id=cls.id
+                    ).first()
+
                     if room:
                         room_id = room.id
 
@@ -229,15 +313,19 @@ def process_inputs():
                     is_floating=(cls.class_category == "floating")
                 ))
 
+
     # -------------------------------------------------
     # 6️⃣ PARALLEL CLASSES
     # -------------------------------------------------
     df = normalize(pd.read_excel("uploads/parallel_classes.xlsx"))
+
     class_col = get_class_column(df)
     slot_col = get_slot_column(df)
 
     for _, r in df.iterrows():
+
         cls = class_map.get(str(r[class_col]).strip())
+
         if not cls:
             continue
 
@@ -266,15 +354,18 @@ def process_inputs():
             is_floating=True
         ))
 
+
     # -------------------------------------------------
-    # 7️⃣ STUDENT ACCOUNTS (FIXED LOCATION)
+    # 7️⃣ STUDENT ACCOUNTS
     # -------------------------------------------------
     df = normalize(pd.read_excel("uploads/student_mapping.xlsx"))
+
     class_col = get_class_column(df)
 
     for _, r in df.iterrows():
 
         class_name = str(r[class_col]).strip()
+
         cls = class_map.get(class_name)
 
         if not cls:
@@ -282,8 +373,7 @@ def process_inputs():
 
         email = str(r["email"]).strip().lower()
 
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
+        if User.query.filter_by(email=email).first():
             continue
 
         student_user = User(
@@ -293,17 +383,15 @@ def process_inputs():
         )
 
         student_user.set_password("student123")
+
         db.session.add(student_user)
 
-    # -------------------------------------------------
-    # FINAL COMMIT
-    # -------------------------------------------------
+
     db.session.commit()
 
     print("\n========== INPUT PROCESSOR DONE ==========\n")
-# -------------------------------------------------
-# 8️⃣ LAB ROOM ASSIGNMENT
-# -------------------------------------------------
+
+
 # -------------------------------------------------
 # 8️⃣ LAB ROOM ASSIGNMENT
 # -------------------------------------------------
@@ -318,6 +406,7 @@ def process_lab_rooms():
         return
 
     df = normalize(pd.read_excel(path))
+
     class_col = get_class_column(df)
 
     for _, r in df.iterrows():
@@ -332,7 +421,6 @@ def process_lab_rooms():
         if not cls or not subject:
             continue
 
-        # find all lab timetable entries for this subject
         entries = TimetableEntry.query.filter(
             TimetableEntry.class_id == cls.id,
             TimetableEntry.subject_id == subject.id,
@@ -345,5 +433,3 @@ def process_lab_rooms():
     db.session.commit()
 
     print("\n========== LAB ROOMS PROCESSED ==========\n")
-
-
