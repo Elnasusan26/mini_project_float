@@ -9,7 +9,7 @@ from datetime import datetime
 
 from models import (
     db, User, Class, Room, Subject,
-    TimetableEntry, CancelledClass, Notification
+    TimetableEntry, CancelledClass, Notification,TeachingAssignment
 )
 
 from input_processor import process_inputs, process_lab_rooms
@@ -444,13 +444,22 @@ def teacher_dashboard():
 
     user = User.query.get(session["user_id"])
 
+    if not user.teacher_id:
+        return "Teacher account not linked to faculty record"
+
     entries = (
         TimetableEntry.query
-        .join(Subject, TimetableEntry.subject_id == Subject.id)
-        .filter(Subject.teacher_id == user.teacher_id)
+        .join(TeachingAssignment,
+            (TeachingAssignment.subject_id == TimetableEntry.subject_id) &
+            (TeachingAssignment.class_id == TimetableEntry.class_id)
+        )
+        .filter(TeachingAssignment.teacher_id == user.teacher_id)
+        .order_by(TimetableEntry.day, TimetableEntry.slot)
         .all()
     )
-
+    for e in entries:
+        print(e.subject.name if e.subject else None,
+              e.class_obj.name if e.class_obj else None)
     # CANCELLED LOOKUP
     today = datetime.today().date()
 

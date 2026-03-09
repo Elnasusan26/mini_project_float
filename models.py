@@ -97,6 +97,14 @@ class Subject(db.Model):
     def __repr__(self):
         return f"<Subject {self.name}>"
 
+class TeachingAssignment(db.Model):
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    teacher_id = db.Column(db.Integer, db.ForeignKey("teacher.id"))
+    subject_id = db.Column(db.Integer, db.ForeignKey("subject.id"))
+    class_id = db.Column(db.Integer, db.ForeignKey("class.id"))
+
 
 # ---------------- TIMETABLE ENTRY ----------------
 class TimetableEntry(db.Model):

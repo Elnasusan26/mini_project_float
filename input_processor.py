@@ -1,5 +1,5 @@
 import pandas as pd
-from models import db, Class, Room, Teacher, Subject, TimetableEntry, User
+from models import db, Class, Room, Teacher, Subject, TimetableEntry, User,TeachingAssignment
 from utils.normalize import normalize_slot, normalize_subject
 from models import Notification
 
@@ -58,6 +58,7 @@ def process_inputs():
     # RESET ACADEMIC TABLES
     Notification.query.delete()
     TimetableEntry.query.delete()
+    TeachingAssignment.query.delete() 
     Subject.query.delete()
     Teacher.query.delete()
     Room.query.delete()
@@ -130,10 +131,9 @@ def process_inputs():
         .str.replace(" ", "_")
     )
 
-    print("Teacher Mapping Columns:", df.columns.tolist())  # debug
+    print("Teacher Mapping Columns:", df.columns.tolist())
 
-    # Validate required columns
-    required_columns = ["faculty", "subject"]
+    required_columns = ["faculty", "subject", "class"]
 
     for col in required_columns:
         if col not in df.columns:
@@ -145,14 +145,24 @@ def process_inputs():
     for _, r in df.iterrows():
 
         faculty = str(r.get("faculty", "")).strip()
+        subject_name = normalize_subject(str(r.get("subject", "")).strip())
+        class_name = (
+            str(r.get("class", ""))
+            .strip()
+            .replace(" ", "_")
+            .replace("-", "_")
+        )
 
-        if not faculty:
+        if not faculty or not subject_name or not class_name:
             continue
 
-        subject_name = normalize_subject(str(r.get("subject", "")).strip())
+        cls = class_map.get(class_name)
+
+        if not cls:
+            continue
 
         # -----------------------------
-        # GET OR CREATE TEACHER
+        # CREATE OR GET TEACHER
         # -----------------------------
         teacher = teacher_map.get(faculty)
 
@@ -185,23 +195,46 @@ def process_inputs():
                 db.session.add(teacher_user)
 
         # -----------------------------
-        # CREATE SUBJECT
+        # CREATE OR GET SUBJECT
         # -----------------------------
-        subject = Subject(
-            name=subject_name,
-            is_lab=(subject_type.get(subject_name) == "lab"),
-            teacher_id=teacher.id
-        )
+        subject = Subject.query.filter_by(name=subject_name).first()
 
-        db.session.add(subject)
-        db.session.flush()
+        if not subject:
+            subject = Subject(
+                name=subject_name,
+                is_lab=(subject_type.get(subject_name) == "lab"),
+                teacher_id=teacher.id
+            )
+            db.session.add(subject)
+            db.session.flush()
+        else:
+            subject.teacher_id = teacher.id
 
         subject_map[subject_name] = subject
+        # -----------------------------
+        # CREATE TEACHING ASSIGNMENT
+        # -----------------------------
 
-    # Commit all changes
+        existing_assignment = TeachingAssignment.query.filter_by(
+            teacher_id=teacher.id,
+            subject_id=subject.id,
+            class_id=cls.id
+        ).first()
+
+        if not existing_assignment:
+
+            assignment = TeachingAssignment(
+                teacher_id=teacher.id,
+                subject_id=subject.id,
+                class_id=cls.id
+            )
+
+            db.session.add(assignment)
+
+    # Save everything
     db.session.commit()
 
-    print("Teachers and subjects processed successfully!")
+    print("Teachers, subjects, and teaching assignments processed successfully!")
 
     # -------------------------------------------------
     # 5️⃣ BASE TIMETABLES
@@ -224,7 +257,7 @@ def process_inputs():
 
         for _, row in df.iterrows():
 
-            day = str(row[day_col]).strip()
+            day = str(row[day_col]).strip().upper()
 
             for slot in slots:
 
@@ -258,20 +291,28 @@ def process_inputs():
                     subject = subject_map.get(subject_name)
 
                     if subject is None:
+                        subject = Subject.query.filter_by(name=subject_name).first()
+
+                    if subject is None:
                         subject = Subject(
                             name=subject_name,
-                            is_lab=True
+                            is_lab=(subject_type.get(subject_name) == "lab")
                         )
-
                         db.session.add(subject)
                         db.session.flush()
 
-                        subject_map[subject_name] = subject
+                    subject_map[subject_name] = subject
 
+                    assignment = TeachingAssignment.query.filter_by(
+                        subject_id=subject.id,
+                        class_id=cls.id
+                    ).first()
+
+                    teacher_id = assignment.teacher_id if assignment else None
                     db.session.add(TimetableEntry(
                         class_id=cls.id,
                         subject_id=subject.id,
-                        teacher_id=subject.teacher_id,
+                        teacher_id=teacher_id,
                         day=day,
                         slot=raw_slot,
                         is_lab_hour=True
@@ -279,18 +320,18 @@ def process_inputs():
 
                     continue
 
-
                 # THEORY
                 subject = subject_map.get(subject_name)
 
                 if subject is None:
+                    subject = Subject.query.filter_by(name=subject_name).first()
 
+                if subject is None:
                     subject = Subject(name=subject_name)
-
                     db.session.add(subject)
                     db.session.flush()
 
-                    subject_map[subject_name] = subject
+                subject_map[subject_name] = subject
 
                 room_id = None
 
@@ -303,10 +344,16 @@ def process_inputs():
                     if room:
                         room_id = room.id
 
+                assignment = TeachingAssignment.query.filter_by(
+                    subject_id=subject.id,
+                    class_id=cls.id
+                ).first()
+
+                teacher_id = assignment.teacher_id if assignment else None
                 db.session.add(TimetableEntry(
                     class_id=cls.id,
                     subject_id=subject.id,
-                    teacher_id=subject.teacher_id,
+                    teacher_id=teacher_id,
                     room_id=room_id,
                     day=day,
                     slot=raw_slot,
@@ -344,10 +391,17 @@ def process_inputs():
             db.session.flush()
             subject_map[subject_name] = subject
 
+        assignment = TeachingAssignment.query.filter_by(
+            subject_id=subject.id,
+            class_id=cls.id
+        ).first()
+
+        # Skip if subject not mapped to teacher
+        teacher_id = assignment.teacher_id if assignment else None
         db.session.add(TimetableEntry(
             class_id=cls.id,
             subject_id=subject.id,
-            teacher_id=subject.teacher_id,
+            teacher_id=teacher_id,
             day=day,
             slot=slot,
             batch=batch,
@@ -412,7 +466,8 @@ def process_lab_rooms():
     for _, r in df.iterrows():
 
         class_name = str(r[class_col]).strip()
-        subject_name = normalize_subject(r["subject"])
+        subject_col = "subject" if "subject" in df.columns else "subject_name"
+        subject_name = normalize_subject(r[subject_col])
         lab_rooms = str(r["rooms"]).strip()
 
         cls = Class.query.filter_by(name=class_name).first()

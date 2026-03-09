@@ -63,6 +63,7 @@ color:var(--muted);
 background:#f9fafb;
 border-radius:12px;
 padding:14px;
+margin-bottom:8px;
 }
 
 .subject{
@@ -116,12 +117,22 @@ font-weight:700;
 '12.45_-_1.30'
 ] %}
 
-{% set lookup={} %}
+{# ---------------------------
+BUILD LOOKUP TABLE
+---------------------------- #}
+
+{% set lookup = {} %}
+
 {% for e in entries %}
-{% if e.day not in lookup %}
-{% set _ = lookup.update({e.day:{}}) %}
-{% endif %}
-{% set _ = lookup[e.day].update({e.slot:e}) %}
+    {% if e.day not in lookup %}
+        {% set _ = lookup.update({e.day:{}}) %}
+    {% endif %}
+
+    {% if e.slot not in lookup[e.day] %}
+        {% set _ = lookup[e.day].update({e.slot:[]}) %}
+    {% endif %}
+
+    {% set _ = lookup[e.day][e.slot].append(e) %}
 {% endfor %}
 
 
@@ -150,9 +161,15 @@ font-weight:700;
 
 <td>
 
-{% set e = lookup.get(day,{}).get(slot) %}
+{% set cell = lookup.get(day,{}).get(slot,[]) %}
 
-{% if e and (e.class_id,day,slot) in cancelled_lookup %}
+{% if cell|length == 0 %}
+-
+{% else %}
+
+{% for e in cell %}
+
+{% if (e.class_id,day,slot) in cancelled_lookup %}
 
 <div class="cancelled">
 ❌ CANCELLED
@@ -161,7 +178,7 @@ font-weight:700;
 </div>
 </div>
 
-{% elif e %}
+{% else %}
 
 <div class="class-cell">
 
@@ -178,6 +195,10 @@ font-weight:700;
 </span>
 
 </div>
+
+{% endif %}
+
+{% endfor %}
 
 {% endif %}
 
