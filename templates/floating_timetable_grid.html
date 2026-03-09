@@ -43,6 +43,17 @@
             color: #900;
             font-weight: bold;
         }
+
+        .lab-room {
+            font-size: 13px;
+            font-weight: bold;
+            color: #060609;
+            
+        }
+        .lab-period {
+            background-color: rgb(218, 232, 250);
+        }
+
     </style>
 </head>
 
@@ -65,44 +76,66 @@
 {% for day in days %}
 <tr>
 
-    <th>{{ day }}</th>
+<th>{{ day }}</th>
 
-    {% for slot in slots %}
+{% for slot in slots %}
 
-        {% set key = (class_name, day, slot) %}
+{% set key = (class_name, day, slot) %}
 
-        {% if key in cancelled_lookup %}
+{% if key in cancelled_lookup %}
 
-            <td class="cancelled">
-                ❌ CANCELLED
-            </td>
+<td class="cancelled">
+❌ CANCELLED
+</td>
 
-        {% elif day in class_data and slot in class_data[day] %}
+{% elif day in class_data and slot in class_data[day] %}
 
-            {% set entries = class_data[day][slot] %}
-            {% set rooms = entries | map(attribute='room') | list %}
+{% set entries = class_data[day][slot] %}
+{% set rooms = entries | map(attribute='room') | list %}
 
-            <td class="{{ 'allocated' if rooms[0] != '-' else 'unallocated' }}">
+{% set lab_rooms = entries | map(attribute='lab_rooms') | select | list %}
 
-                <strong>
-                    {{ entries | map(attribute='subject') | join(' / ') }}
-                </strong>
+<td class="
+{% if lab_rooms %}
+lab-period
+{% elif rooms[0] != '-' %}
+allocated
+{% else %}
+unallocated
+{% endif %}
+">
 
-                <br>
+<strong>
+{{ entries | map(attribute='subject') | join(' / ') }}
+</strong>
 
-                (
-                {{ entries | map(attribute='room') | join(', ') }}
-                )
+<br>
 
-            </td>
+{% set lab_rooms = entries | map(attribute='lab_rooms') | select | list %}
 
-        {% else %}
+{% if lab_rooms %}
 
-            <td>-</td>
+(
+{{ lab_rooms | join(', ') }}
+)
 
-        {% endif %}
+{% else %}
 
-    {% endfor %}
+(
+{{ entries | map(attribute='room') | join(', ') }}
+)
+
+{% endif %}
+
+</td>
+
+{% else %}
+
+<td>-</td>
+
+{% endif %}
+
+{% endfor %}
 
 </tr>
 {% endfor %}

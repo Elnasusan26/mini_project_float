@@ -12,7 +12,7 @@ from models import (
     TimetableEntry, CancelledClass, Notification
 )
 
-from input_processor import process_inputs
+from input_processor import process_inputs, process_lab_rooms
 from allocator import allocate_rooms
 from utils.normalize import normalize_slot
 
@@ -208,14 +208,15 @@ def admin_upload():
     if request.method == "POST":
 
         files = {
-            "class_strength": "class_strength.xlsx",
-            "room_mapping": "room_mapping.xlsx",
-            "class_type": "class_type.xlsx",
-            "teacher_subject": "teacher_subject_mapping.xlsx",
-            "parallel_classes": "parallel_classes.xlsx",
-            "timetables": "timetables.xlsx",
-            "student_mapping": "student_mapping.xlsx"
-        }
+    "class_strength": "class_strength.xlsx",
+    "room_mapping": "room_mapping.xlsx",
+    "class_type": "class_type.xlsx",
+    "teacher_subject": "teacher_subject_mapping.xlsx",
+    "parallel_classes": "parallel_classes.xlsx",
+    "student_mapping": "student_mapping.xlsx",
+    "timetables": "timetables.xlsx",
+    "lab_rooms": "lab_rooms.xlsx"   # NEW
+}
 
         for key, filename in files.items():
 
@@ -227,8 +228,8 @@ def admin_upload():
             )
 
         process_inputs()
+        process_lab_rooms()
         allocate_rooms()
-
         
 
         return redirect(url_for("view_floating_timetable"))
@@ -396,9 +397,10 @@ def view_floating_timetable():
         slot = normalize_slot(e.slot)
 
         raw[cls][day][slot].append({
-            "subject": e.subject.name if e.subject else "-",
-            "room": e.room.name if e.room else "-",
-            "batch": e.batch
+        "subject": e.subject.name if e.subject else "-",
+        "room": e.room.name if e.room else "-",
+        "lab_rooms": e.lab_rooms,
+        "batch": e.batch
         })
 
     # -------------------------------------------------

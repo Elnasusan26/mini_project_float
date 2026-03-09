@@ -173,7 +173,17 @@ font-weight:700;
 </div>
 
 <span class="room-tag">
-{{e.room.name if e.room else '—'}}
+
+{% if e.lab_rooms %}
+
+({{e.lab_rooms}})
+
+{% else %}
+
+({{e.room.name if e.room else '—'}})
+
+{% endif %}
+
 </span>
 
 </div>

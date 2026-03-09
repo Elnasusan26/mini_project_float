@@ -301,3 +301,49 @@ def process_inputs():
     db.session.commit()
 
     print("\n========== INPUT PROCESSOR DONE ==========\n")
+# -------------------------------------------------
+# 8️⃣ LAB ROOM ASSIGNMENT
+# -------------------------------------------------
+# -------------------------------------------------
+# 8️⃣ LAB ROOM ASSIGNMENT
+# -------------------------------------------------
+def process_lab_rooms():
+
+    import os
+
+    path = "uploads/lab_rooms.xlsx"
+
+    if not os.path.exists(path):
+        print("No lab_rooms.xlsx file found")
+        return
+
+    df = normalize(pd.read_excel(path))
+    class_col = get_class_column(df)
+
+    for _, r in df.iterrows():
+
+        class_name = str(r[class_col]).strip()
+        subject_name = normalize_subject(r["subject"])
+        lab_rooms = str(r["rooms"]).strip()
+
+        cls = Class.query.filter_by(name=class_name).first()
+        subject = Subject.query.filter_by(name=subject_name).first()
+
+        if not cls or not subject:
+            continue
+
+        # find all lab timetable entries for this subject
+        entries = TimetableEntry.query.filter(
+            TimetableEntry.class_id == cls.id,
+            TimetableEntry.subject_id == subject.id,
+            TimetableEntry.is_lab_hour == True
+        ).all()
+
+        for e in entries:
+            e.lab_rooms = lab_rooms
+
+    db.session.commit()
+
+    print("\n========== LAB ROOMS PROCESSED ==========\n")
+
+

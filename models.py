@@ -13,28 +13,15 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
 
-    role = db.Column(
-        db.String(20),
-        nullable=False
-    )  # 'admin', 'teacher', 'student'
+    role = db.Column(db.String(20), nullable=False)  # admin / teacher / student
 
-    # Optional links
-    teacher_id = db.Column(
-        db.Integer,
-        db.ForeignKey("teacher.id"),
-        nullable=True
-    )
-
-    class_id = db.Column(
-        db.Integer,
-        db.ForeignKey("class.id"),
-        nullable=True
-    )
+    teacher_id = db.Column(db.Integer, db.ForeignKey("teacher.id"), nullable=True)
+    class_id = db.Column(db.Integer, db.ForeignKey("class.id"), nullable=True)
 
     teacher = db.relationship("Teacher", backref="user", uselist=False)
     class_obj = db.relationship("Class", backref="students")
 
-    # 🔔 Notifications relationship
+    # 🔔 Notifications
     notifications = db.relationship(
         "Notification",
         backref="user",
@@ -75,11 +62,7 @@ class Room(db.Model):
 
     is_permanent = db.Column(db.Boolean, default=True)
 
-    owner_class_id = db.Column(
-        db.Integer,
-        db.ForeignKey("class.id"),
-        nullable=True
-    )
+    owner_class_id = db.Column(db.Integer, db.ForeignKey("class.id"), nullable=True)
 
     owner_class = db.relationship("Class", backref="rooms")
 
@@ -107,11 +90,7 @@ class Subject(db.Model):
 
     is_lab = db.Column(db.Boolean, default=False)
 
-    teacher_id = db.Column(
-        db.Integer,
-        db.ForeignKey("teacher.id"),
-        nullable=True
-    )
+    teacher_id = db.Column(db.Integer, db.ForeignKey("teacher.id"), nullable=True)
 
     teacher = db.relationship("Teacher", backref="subjects")
 
@@ -125,38 +104,23 @@ class TimetableEntry(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    class_id = db.Column(
-        db.Integer,
-        db.ForeignKey("class.id"),
-        nullable=False
-    )
+    class_id = db.Column(db.Integer, db.ForeignKey("class.id"), nullable=False)
+    subject_id = db.Column(db.Integer, db.ForeignKey("subject.id"))
+    teacher_id = db.Column(db.Integer, db.ForeignKey("teacher.id"))
+    room_id = db.Column(db.Integer, db.ForeignKey("room.id"))
 
-    subject_id = db.Column(
-        db.Integer,
-        db.ForeignKey("subject.id"),
-        nullable=True
-    )
+    # ⭐ LAB ROOM SUPPORT
+    lab_rooms = db.Column(db.String(200))
 
-    teacher_id = db.Column(
-        db.Integer,
-        db.ForeignKey("teacher.id"),
-        nullable=True
-    )
+    day = db.Column(db.String(20))
+    slot = db.Column(db.String(30))
 
-    room_id = db.Column(
-        db.Integer,
-        db.ForeignKey("room.id"),
-        nullable=True
-    )
-
-    day = db.Column(db.String(20), nullable=False)
-    slot = db.Column(db.String(30), nullable=False)
-
-    batch = db.Column(db.String(10), nullable=True)
+    batch = db.Column(db.String(10))
 
     is_lab_hour = db.Column(db.Boolean, default=False)
     is_floating = db.Column(db.Boolean, default=False)
 
+    # ⭐ RELATIONSHIPS (IMPORTANT)
     class_obj = db.relationship("Class", backref="timetable_entries")
     subject = db.relationship("Subject")
     teacher = db.relationship("Teacher")
@@ -168,20 +132,12 @@ class TimetableEntry(db.Model):
 
 # ---------------- CANCELLED CLASS ----------------
 class CancelledClass(db.Model):
-    """
-    Stores cancelled classes for specific dates.
-    Used to dynamically free rooms and reallocate them.
-    """
 
     __tablename__ = "cancelled_class"
 
     id = db.Column(db.Integer, primary_key=True)
 
-    class_id = db.Column(
-        db.Integer,
-        db.ForeignKey("class.id"),
-        nullable=False
-    )
+    class_id = db.Column(db.Integer, db.ForeignKey("class.id"), nullable=False)
 
     slot = db.Column(db.String(30), nullable=False)
 
@@ -197,32 +153,18 @@ class CancelledClass(db.Model):
 
 # ---------------- 🔔 NOTIFICATION ----------------
 class Notification(db.Model):
-    """
-    Stores notifications for teachers and students
-    Example: class cancelled alerts
-    """
 
     __tablename__ = "notification"
 
     id = db.Column(db.Integer, primary_key=True)
 
-    user_id = db.Column(
-        db.Integer,
-        db.ForeignKey("user.id"),
-        nullable=False
-    )
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
     message = db.Column(db.String(300), nullable=False)
 
-    created_at = db.Column(
-        db.DateTime,
-        default=datetime.utcnow
-    )
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    is_read = db.Column(
-        db.Boolean,
-        default=False
-    )
+    is_read = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return f"<Notification {self.user_id} {self.message}>"
