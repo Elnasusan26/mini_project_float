@@ -28,6 +28,7 @@ body {
 .container {
   display: flex;
   min-height: 100vh;
+  align-items: stretch;
 }
 
 /* ── LEFT PANEL ── */
@@ -156,12 +157,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 60px 48px;
+  padding: 60px 64px;
+  min-height: 100vh;
 }
 
 .right-inner {
   width: 100%;
-  max-width: 420px;
+  max-width: 560px;
 }
 
 .right-header {
@@ -206,7 +208,7 @@ form label {
   align-items: center;
   border: 1.5px solid var(--border);
   border-radius: 10px;
-  padding: 11px 14px;
+  padding: 14px 16px;
   background: var(--white);
   transition: border-color 0.18s, box-shadow 0.18s;
 }
@@ -278,12 +280,12 @@ form label {
 /* ── SUBMIT BUTTON ── */
 .login-btn {
   width: 100%;
-  padding: 14px;
+  padding: 16px;
   background: var(--navy);
   color: white;
   border: none;
   border-radius: 11px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   letter-spacing: 0.3px;
@@ -310,3 +312,58 @@ form label {
 
 input::-ms-reveal,
 input::-ms-clear { display: none; }
+
+/* ── RESPONSIVE ── */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .left { width: 45%; padding: 48px 36px; }
+  .right { width: 55%; padding: 48px 36px; }
+  .left h1 { font-size: 32px; }
+}
+
+/* Mobile — stack panels vertically */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .left {
+    width: 100%;
+    padding: 40px 28px;
+    min-height: auto;
+  }
+
+  /* Hide heavy content on mobile to keep it clean */
+  .left h1 { font-size: 26px; margin-bottom: 12px; }
+  .desc { display: none; }
+  .feature-list { display: none; }
+  .stats { gap: 10px; }
+  .stat { padding: 12px 16px; }
+  .stat-num { font-size: 20px; }
+
+  .right {
+    width: 100%;
+    padding: 36px 24px;
+    align-items: flex-start;
+  }
+
+  .right-inner { max-width: 100%; }
+  .right h2 { font-size: 36px; }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .left { padding: 28px 20px; }
+  .logo-label { font-size: 18px; }
+  .left h1 { font-size: 22px; }
+  .stats { flex-direction: column; }
+
+  .right { padding: 28px 20px; }
+  .options {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}

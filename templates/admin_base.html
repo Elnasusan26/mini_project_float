@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FloatED | {% block title %}{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
   <style>
@@ -26,6 +27,7 @@
       min-height: 100vh;
     }
 
+    /* ── SIDEBAR ── */
     .sidebar {
       width: 240px;
       background: var(--white);
@@ -36,6 +38,8 @@
       padding: 28px 16px;
       position: fixed;
       top: 0; left: 0; bottom: 0;
+      z-index: 100;
+      transition: transform .25s ease;
     }
 
     .sidebar-top {
@@ -113,6 +117,7 @@
 
     .sidebar-bottom a:hover { background: #fff0f0; color: #c0392b; }
 
+    /* ── LAYOUT ── */
     .layout { display: flex; width: 100%; }
 
     .main-content {
@@ -122,6 +127,57 @@
       min-height: 100vh;
     }
 
+    /* ── TOPBAR (mobile only) ── */
+    .topbar {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 56px;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      z-index: 200;
+    }
+
+    .topbar-logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .hamburger {
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 4px;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 24px;
+      height: 2px;
+      background: var(--navy);
+      border-radius: 2px;
+      transition: all .25s;
+    }
+
+    /* Overlay when sidebar open on mobile */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 99;
+    }
+
+    .sidebar-overlay.active { display: block; }
+
+    /* ── FLASH ── */
     .flash-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -157,6 +213,38 @@
 
     .flash-popup.success { border-top: 4px solid var(--teal); }
     .flash-popup.error   { border-top: 4px solid #c0392b; }
+
+    /* ── RESPONSIVE ── */
+
+    /* Tablet */
+    @media (max-width: 1024px) {
+      .sidebar { width: 200px; }
+      .main-content { margin-left: 200px; padding: 24px; }
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .topbar { display: flex; }
+
+      .sidebar {
+        transform: translateX(-100%);
+        width: 260px;
+        top: 0;
+      }
+
+      .sidebar.open { transform: translateX(0); }
+
+      .main-content {
+        margin-left: 0;
+        padding: 80px 16px 24px;
+        width: 100%;
+      }
+    }
+
+    /* Small mobile */
+    @media (max-width: 480px) {
+      .main-content { padding: 72px 12px 20px; }
+    }
   </style>
 </head>
 
@@ -175,9 +263,22 @@
   {% endif %}
 {% endwith %}
 
+<!-- Mobile topbar -->
+<div class="topbar">
+  <span class="topbar-logo">🎓 FloatED</span>
+  <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+</div>
+
+<!-- Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
 <div class="layout">
 
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
 
     <div>
       <div class="sidebar-top">
@@ -186,32 +287,26 @@
       </div>
 
       <nav class="sidebar-nav">
-
         <a href="/admin" {% if request.path == '/admin' %}class="active"{% endif %}>
           Dashboard
         </a>
-
         <a href="/admin_upload" {% if request.path == '/admin_upload' %}class="active"{% endif %}>
           Upload Timetable
         </a>
-
         <a href="/view/timetable" {% if request.path == '/view/timetable' %}class="active"{% endif %}>
           View Timetable
         </a>
-
-        <!-- NEW CANCEL CLASS OPTION -->
         <a href="/admin/cancel_class" {% if request.path == '/admin/cancel_class' %}class="active"{% endif %}>
           Cancel Class
         </a>
-        <a href="{{ url_for('cancelled_classes') }}">View Cancelled Classes</a>
-
+        <a href="{{ url_for('cancelled_classes') }}" {% if request.path == '/admin/cancelled_classes' %}class="active"{% endif %}>
+          View Cancelled Classes
+        </a>
       </nav>
     </div>
 
     <div class="sidebar-bottom">
-      <a href="/logout">
-        Logout
-      </a>
+      <a href="/logout">Logout</a>
     </div>
 
   </aside>
@@ -227,6 +322,23 @@
     const overlay = document.querySelector(".flash-overlay");
     if (overlay) overlay.style.display = "none";
   }
+
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('active');
+  }
+
+  // Close sidebar when a nav link is clicked on mobile
+  document.querySelectorAll('.sidebar-nav a, .sidebar-bottom a').forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 768) {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('active');
+      }
+    });
+  });
 </script>
 
 </body>
