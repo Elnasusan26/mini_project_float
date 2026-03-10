@@ -377,7 +377,7 @@
 
 <script>
   const TOTAL = 8;
-  let selectedCount = 0;
+  const selectedFiles = {};
 
   function fileSelected(input, key) {
     const box  = document.getElementById('box-' + key);
@@ -386,13 +386,14 @@
     if (input.files && input.files[0]) {
       box.classList.add('selected');
       name.textContent = input.files[0].name;
-      selectedCount++;
+      selectedFiles[key] = true;
     }
 
     updateProgress();
   }
 
   function updateProgress() {
+    const selectedCount = Object.keys(selectedFiles).length;
     const pct = Math.min((selectedCount / TOTAL) * 100, 100);
     document.getElementById('progressFill').style.width = pct + '%';
     document.getElementById('progressText').textContent = selectedCount + ' / ' + TOTAL;

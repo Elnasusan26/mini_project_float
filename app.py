@@ -1,6 +1,6 @@
 from flask import (
     Flask, render_template, request,
-    redirect, url_for, flash, session, abort,send_file
+    redirect, url_for, flash, session, abort, send_file
 )
 import os
 from collections import defaultdict
@@ -11,7 +11,7 @@ import pandas as pd
 
 from models import (
     db, User, Class, Room, Subject,
-    TimetableEntry, CancelledClass, Notification,TeachingAssignment
+    TimetableEntry, CancelledClass, Notification, TeachingAssignment
 )
 
 from input_processor import process_inputs, process_lab_rooms
@@ -190,11 +190,23 @@ def admin_dashboard():
         .scalar()
     )
 
+    # -----------------------------------
+    # RECENT ACTIVITY
+    # -----------------------------------
+
+    recent_cancelled = (
+        CancelledClass.query
+        .order_by(CancelledClass.id.desc())
+        .limit(5)
+        .all()
+    )
+
     return render_template(
         "home.html",
         permanent_count=permanent_count,
         floating_count=floating_count,
-        allocated_count=allocated_count
+        allocated_count=allocated_count,
+        recent_cancelled=recent_cancelled
     )
 
 
@@ -210,15 +222,15 @@ def admin_upload():
     if request.method == "POST":
 
         files = {
-    "class_strength": "class_strength.xlsx",
-    "room_mapping": "room_mapping.xlsx",
-    "class_type": "class_type.xlsx",
-    "teacher_subject": "teacher_subject_mapping.xlsx",
-    "parallel_classes": "parallel_classes.xlsx",
-    "student_mapping": "student_mapping.xlsx",
-    "timetables": "timetables.xlsx",
-    "lab_rooms": "lab_rooms.xlsx"   # NEW
-}
+            "class_strength": "class_strength.xlsx",
+            "room_mapping": "room_mapping.xlsx",
+            "class_type": "class_type.xlsx",
+            "teacher_subject": "teacher_subject_mapping.xlsx",
+            "parallel_classes": "parallel_classes.xlsx",
+            "student_mapping": "student_mapping.xlsx",
+            "timetables": "timetables.xlsx",
+            "lab_rooms": "lab_rooms.xlsx"
+        }
 
         for key, filename in files.items():
 
@@ -232,7 +244,6 @@ def admin_upload():
         process_inputs()
         process_lab_rooms()
         allocate_rooms()
-        
 
         return redirect(url_for("view_floating_timetable"))
 
@@ -370,8 +381,6 @@ def delete_cancelled(id):
 
     allocate_rooms()
 
-    
-
     return redirect(url_for("cancelled_classes"))
 
 
@@ -399,10 +408,10 @@ def view_floating_timetable():
         slot = normalize_slot(e.slot)
 
         raw[cls][day][slot].append({
-        "subject": e.subject.name if e.subject else "-",
-        "room": e.room.name if e.room else "-",
-        "lab_rooms": e.lab_rooms,
-        "batch": e.batch
+            "subject": e.subject.name if e.subject else "-",
+            "room": e.room.name if e.room else "-",
+            "lab_rooms": e.lab_rooms,
+            "batch": e.batch
         })
 
     # -------------------------------------------------
@@ -438,6 +447,7 @@ def view_floating_timetable():
         class_map=class_map
     )
 
+
 # ==============================================================
 # TEACHER DASHBOARD
 # ==============================================================
@@ -462,9 +472,11 @@ def teacher_dashboard():
         .order_by(TimetableEntry.day, TimetableEntry.slot)
         .all()
     )
+
     for e in entries:
         print(e.subject.name if e.subject else None,
               e.class_obj.name if e.class_obj else None)
+
     # CANCELLED LOOKUP
     today = datetime.today().date()
 
@@ -477,7 +489,6 @@ def teacher_dashboard():
     for c in cancelled:
         cancel_day = c.date.strftime("%A").upper()
         slot = normalize_slot(c.slot)
-
         cancelled_lookup.add((c.class_id, cancel_day, slot))
 
     return render_template(
@@ -531,6 +542,7 @@ def student_dashboard():
         cancelled_lookup=cancelled_lookup
     )
 
+
 # ==============================================================
 # LOGOUT
 # ==============================================================
@@ -539,6 +551,7 @@ def student_dashboard():
 def logout():
     session.clear()
     return redirect(url_for("login"))
+
 
 @app.route("/class_timetable/<int:class_id>")
 @login_required
@@ -572,7 +585,7 @@ def export_class_timetable(class_id):
 
         subject = e.subject.name if e.subject else "-"
 
-# check lab rooms first
+        # check lab rooms first
         if e.lab_rooms:
             value = f"{subject} ({e.lab_rooms})"
         else:
@@ -604,6 +617,7 @@ def export_class_timetable(class_id):
         download_name=f"{cls.name}_timetable.xlsx",
         as_attachment=True
     )
+
 
 # ==============================================================
 # MAIN

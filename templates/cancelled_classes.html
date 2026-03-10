@@ -1,126 +1,220 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 {% block title %}Cancelled Classes{% endblock %}
 
 {% block content %}
 
 <style>
+  .page-header {
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
 
-.page-header{
-margin-bottom:30px;
-}
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
 
-.page-header h2{
-font-size:28px;
-font-weight:700;
-color:var(--navy);
-}
+  .page-header p {
+    font-size: 15px;
+    color: var(--muted);
+  }
 
-.table-card{
-background:#fff;
-border-radius:18px;
-border:1px solid var(--border);
-padding:28px;
-box-shadow:0 4px 18px rgba(0,0,0,0.04);
-}
+  .cancel-btn-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--navy);
+    color: white;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background .15s;
+  }
 
-table{
-width:100%;
-border-collapse:collapse;
-}
+  .cancel-btn-link:hover { background: var(--teal); }
 
-thead th{
-background:var(--navy);
-color:#fff;
-padding:14px;
-font-size:14px;
-}
+  .table-card {
+    background: var(--white);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
 
-tbody td{
-padding:14px;
-border-bottom:1px solid var(--border);
-text-align:center;
-}
+  .table-scroll { overflow-x: auto; }
 
-.status{
-background:#ffe6e6;
-color:#a10000;
-padding:4px 10px;
-border-radius:6px;
-font-weight:600;
-}
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+  }
 
-.delete-btn{
-background:#e74c3c;
-color:#fff;
-padding:6px 12px;
-border-radius:6px;
-text-decoration:none;
-}
+  thead th {
+    background: var(--navy);
+    color: #fff;
+    padding: 14px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+  }
 
+  thead th:first-child { text-align: left; padding-left: 24px; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .12s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg); }
+
+  tbody td {
+    padding: 14px 18px;
+    font-size: 14px;
+    color: var(--text);
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  tbody td:first-child {
+    text-align: left;
+    padding-left: 24px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .class-name {
+    font-weight: 600;
+    color: var(--navy);
+  }
+
+  .slot-badge {
+    display: inline-block;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .status-badge {
+    display: inline-block;
+    background: #fee2e2;
+    color: #b91c1c;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .delete-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff0f0;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background .15s, border-color .15s;
+  }
+
+  .delete-btn:hover {
+    background: #e74c3c;
+    color: white;
+    border-color: #e74c3c;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted);
+  }
+
+  .empty-state .empty-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+  }
+
+  .empty-state p {
+    font-size: 15px;
+  }
+
+  @media (max-width: 768px) {
+    .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  }
 </style>
 
+<!-- Header -->
 <div class="page-header">
-<h2>Cancelled Classes</h2>
+  <div>
+    <h1>Cancelled Classes</h1>
+    <p>All classes that have been cancelled and reallocated.</p>
+  </div>
+  <a href="/admin/cancel_class" class="cancel-btn-link">
+    + Cancel a Class
+  </a>
 </div>
 
+<!-- Table -->
 <div class="table-card">
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Sl.No</th>
+          <th>Class</th>
+          <th>Date</th>
+          <th>Slot</th>
+          <th>Reason</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
 
-<table>
+        {% if cancelled %}
+          {% for c in cancelled %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td><span class="class-name">{{ c.class_obj.name }}</span></td>
+            <td>{{ c.date.strftime('%d %b %Y') }}</td>
+            <td><span class="slot-badge">{{ c.slot }}</span></td>
+            <td>{{ c.reason if c.reason else '—' }}</td>
+            <td><span class="status-badge">Cancelled</span></td>
+            <td>
+              <a href="{{ url_for('delete_cancelled', id=c.id) }}" class="delete-btn">
+                🗑 Delete
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
 
-<thead>
-<tr>
-<th>Sl.No</th>
-<th>Class</th>
-<th>Date</th>
-<th>Slot</th>
-<th>Reason</th>
-<th>Status</th>
-<th>Delete</th>
-</tr>
-</thead>
+        {% else %}
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <div class="empty-icon">✅</div>
+                <p>No cancelled classes yet.</p>
+              </div>
+            </td>
+          </tr>
+        {% endif %}
 
-<tbody>
-
-{% for c in cancelled %}
-
-<tr>
-
-<td>{{ loop.index }}</td>
-
-<td>
-{{ c.class_obj.name }}
-</td>
-
-<td>
-{{ c.date }}
-</td>
-
-<td>
-{{ c.slot }}
-</td>
-
-<td>
-{{ c.reason if c.reason else "-" }}
-</td>
-
-<td>
-<span class="status">Cancelled</span>
-</td>
-
-<td>
-<a href="{{ url_for('delete_cancelled', id=c.id) }}" class="delete-btn">
-Delete
-</a>
-</td>
-
-</tr>
-
-{% endfor %}
-
-</tbody>
-
-</table>
-
+      </tbody>
+    </table>
+  </div>
 </div>
 
 {% endblock %}
