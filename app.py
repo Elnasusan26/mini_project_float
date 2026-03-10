@@ -1,11 +1,13 @@
 from flask import (
     Flask, render_template, request,
-    redirect, url_for, flash, session, abort
+    redirect, url_for, flash, session, abort,send_file
 )
 import os
 from collections import defaultdict
 from functools import wraps
 from datetime import datetime
+from io import BytesIO
+import pandas as pd
 
 from models import (
     db, User, Class, Room, Subject,
@@ -425,12 +427,15 @@ def view_floating_timetable():
         if cls:
             cancelled_lookup.add((cls.name, cancel_day, slot))
 
+    class_map = {c.name: c.id for c in Class.query.all()}
+
     return render_template(
         "floating_timetable_grid.html",
         timetable=raw,
         slots=TIME_SLOTS,
         days=DAYS,
-        cancelled_lookup=cancelled_lookup
+        cancelled_lookup=cancelled_lookup,
+        class_map=class_map
     )
 
 # ==============================================================
@@ -535,6 +540,70 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
+@app.route("/class_timetable/<int:class_id>")
+@login_required
+def class_timetable(class_id):
+
+    entries = TimetableEntry.query.filter_by(class_id=class_id)\
+        .order_by(TimetableEntry.day, TimetableEntry.slot)\
+        .all()
+
+    return render_template(
+        "class_timetable.html",
+        entries=entries,
+        class_id=class_id
+    )
+
+
+@app.route('/export/class/<int:class_id>')
+@login_required
+def export_class_timetable(class_id):
+
+    cls = Class.query.get(class_id)
+
+    entries = TimetableEntry.query.filter_by(class_id=class_id)\
+        .order_by(TimetableEntry.day, TimetableEntry.slot)\
+        .all()
+
+    # create grid dictionary
+    grid = {day: {slot: "-" for slot in TIME_SLOTS} for day in DAYS}
+
+    for e in entries:
+
+        subject = e.subject.name if e.subject else "-"
+
+# check lab rooms first
+        if e.lab_rooms:
+            value = f"{subject} ({e.lab_rooms})"
+        else:
+            room = e.room.name if e.room else "-"
+            value = f"{subject} ({room})"
+
+        grid[e.day][normalize_slot(e.slot)] = value
+
+    # convert to dataframe
+    data = []
+
+    for day in DAYS:
+        row = {"Day / Time": day}
+        for slot in TIME_SLOTS:
+            row[slot] = grid[day][slot]
+        data.append(row)
+
+    df = pd.DataFrame(data)
+
+    output = BytesIO()
+
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Timetable")
+
+    output.seek(0)
+
+    return send_file(
+        output,
+        download_name=f"{cls.name}_timetable.xlsx",
+        as_attachment=True
+    )
 
 # ==============================================================
 # MAIN

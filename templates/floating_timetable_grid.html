@@ -62,8 +62,14 @@
 <h1>Floating Class Timetable</h1>
 
 {% for class_name, class_data in timetable.items() %}
-<h2>Class: {{ class_name }}</h2>
+<h2>
+Class: {{ class_name }}
 
+<a href="{{ url_for('export_class_timetable', class_id=class_map[class_name]) }}">
+<button style="margin-left:20px;">Export Excel</button>
+</a>
+
+</h2>
 <table>
 
 <tr>
