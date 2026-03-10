@@ -1,157 +1,298 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Cancel Class</title>
+{% extends "admin_base.html" %}
+
+{% block title %}Cancel Class{% endblock %}
+
+{% block content %}
 
 <style>
+ .page-header {
+    margin-bottom: 32px;
+    text-align: center;
+  } 
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .page-header p {
+    font-size: 15px;
+    color: var(--muted);
+  }
 
-body{
-    font-family: Arial, Helvetica, sans-serif;
-    background:#f5f6fa;
-}
+.form-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  
 
-.container{
-    width:900px;
-    margin:auto;
-    background:white;
-    padding:40px;
-    margin-top:40px;
-    border-radius:8px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.1);
-}
+  .form-group {
+    margin-bottom: 24px;
+  }
 
-h2{
-    margin-bottom:30px;
-    color:#2c3e50;
-}
+  .form-group label.group-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
 
-.form-row{
-    display:flex;
-    margin-bottom:25px;
-    align-items:center;
-}
+  select, input[type="date"], input[type="text"], textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 15px;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    transition: border-color .15s, background .15s;
+    font-family: inherit;
+  }
 
-.form-label{
-    width:200px;
-    font-weight:600;
-    color:#555;
-}
+  select:focus, input[type="date"]:focus,
+  input[type="text"]:focus, textarea:focus {
+    border-color: var(--teal);
+    background: var(--white);
+  }
 
-.form-input{
-    flex:1;
-}
+  textarea { height: 110px; resize: vertical; }
 
-select,input,textarea{
-    width:100%;
-    padding:10px;
-    border:1px solid #ccc;
-    border-radius:5px;
-    font-size:14px;
-}
+  /* Session slots */
+  .slot-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
 
-textarea{
-    height:100px;
-}
+  .slot-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    user-select: none;
+  }
 
-.slot-grid{
-    display:grid;
-    grid-template-columns: repeat(4,1fr);
-    gap:15px;
-}
+  .slot-item:hover {
+    border-color: var(--teal);
+    background: var(--teal-lt);
+  }
 
-.slot-item{
-    display:flex;
-    align-items:center;
-    gap:8px;
-}
+  .slot-item input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--teal);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
 
-button{
-    background:#2c7be5;
-    color:white;
-    border:none;
-    padding:12px 25px;
-    border-radius:5px;
-    font-size:15px;
-    cursor:pointer;
-}
+  .slot-item.checked {
+    border-color: var(--teal);
+    background: var(--teal-lt);
+  }
 
-button:hover{
-    background:#1a5fd0;
-}
+  .slot-label {
+    display: flex;
+    flex-direction: column;
+  }
 
+  .slot-label .slot-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .slot-label .slot-time {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  /* Divider */
+  .form-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 28px 0;
+  }
+
+  /* Submit row */
+  .submit-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 14px;
+    margin-top: 8px;
+  }
+
+  .cancel-btn {
+    padding: 12px 24px;
+    background: var(--bg);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .15s;
+  }
+
+  .cancel-btn:hover {
+    border-color: var(--navy);
+    color: var(--navy);
+  }
+
+  .submit-btn {
+    padding: 12px 28px;
+    background: var(--navy);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+  }
+
+  .submit-btn:hover { background: var(--teal); }
 </style>
-</head>
 
-<body>
-
-<div class="container">
-
-<h2>Cancel Classroom Allocation</h2>
-
-<form method="POST">
-
-<div class="form-row">
-<label class="form-label">Class</label>
-<div class="form-input">
-<select name="class_id" required>
-{% for c in classes %}
-<option value="{{c.id}}">{{c.name}}</option>
-{% endfor %}
-</select>
-</div>
+<!-- Header -->
+<div class="page-header">
+  <h1>Cancel Classroom Allocation</h1>
+  <p>Select a class, date, and sessions to cancel and reallocate rooms.</p>
 </div>
 
+<div class="form-card">
+  <form method="POST">
 
-<div class="form-row">
-<label class="form-label">Date</label>
-<div class="form-input">
-<input type="date" name="date" required>
+  <!-- Class + Date side by side -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="group-label">Class</label>
+        <select name="class_id" required>
+          {% for c in classes %}
+            <option value="{{ c.id }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="group-label">Date</label>
+        <input type="date" name="date" required>
+      </div>
+
+    </div>  
+
+    <hr class="form-divider">
+
+    <!-- Session -->
+    <div class="form-group">
+      <label class="group-label">Sessions to Cancel</label>
+      <div class="slot-grid">
+
+        <label class="slot-item" id="slot1">
+          <input type="checkbox" name="slots" value="8.00_-_8.45"
+                 onchange="toggleSlot(this, 'slot1')">
+          <div class="slot-label">
+            <span class="slot-name">1st Hour</span>
+            <span class="slot-time">8:00 – 8:45</span>
+          </div>
+        </label>
+
+        <label class="slot-item" id="slot2">
+          <input type="checkbox" name="slots" value="9.10_-_9.55"
+                 onchange="toggleSlot(this, 'slot2')">
+          <div class="slot-label">
+            <span class="slot-name">2nd Hour</span>
+            <span class="slot-time">9:10 – 9:55</span>
+          </div>
+        </label>
+
+        <label class="slot-item" id="slot3">
+          <input type="checkbox" name="slots" value="10.00_-_10.45"
+                 onchange="toggleSlot(this, 'slot3')">
+          <div class="slot-label">
+            <span class="slot-name">3rd Hour</span>
+            <span class="slot-time">10:00 – 10:45</span>
+          </div>
+        </label>
+
+        <label class="slot-item" id="slot4">
+          <input type="checkbox" name="slots" value="10.50_-_11.35"
+                 onchange="toggleSlot(this, 'slot4')">
+          <div class="slot-label">
+            <span class="slot-name">4th Hour</span>
+            <span class="slot-time">10:50 – 11:35</span>
+          </div>
+        </label>
+
+        <label class="slot-item" id="slot5">
+          <input type="checkbox" name="slots" value="11.55_-_12.40"
+                 onchange="toggleSlot(this, 'slot5')">
+          <div class="slot-label">
+            <span class="slot-name">5th Hour</span>
+            <span class="slot-time">11:55 – 12:40</span>
+          </div>
+        </label>
+
+        <label class="slot-item" id="slot6">
+          <input type="checkbox" name="slots" value="12.45_-_1.30"
+                 onchange="toggleSlot(this, 'slot6')">
+          <div class="slot-label">
+            <span class="slot-name">6th Hour</span>
+            <span class="slot-time">12:45 – 1:30</span>
+          </div>
+        </label>
+
+      </div>
+    </div>
+
+    <hr class="form-divider">
+
+    <!-- Reason -->
+    <div class="form-group">
+      <label class="group-label">Reason</label>
+      <input type="text" name="reason" placeholder="e.g. Staff meeting, Holiday..."
+             required>
+    </div>
+
+    <!-- Description -->
+    <div class="form-group">
+      <label class="group-label">Description <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+      <textarea name="description"
+                placeholder="Add any additional details..."></textarea>
+    </div>
+
+    <!-- Submit -->
+    <div class="submit-row">
+      <a href="/admin" class="cancel-btn">Back</a>
+      <button type="submit" class="submit-btn">Cancel Class</button>
+    </div>
+
+  </form>
 </div>
-</div>
 
+<script>
+  function toggleSlot(checkbox, id) {
+    const label = document.getElementById(id);
+    if (checkbox.checked) {
+      label.classList.add('checked');
+    } else {
+      label.classList.remove('checked');
+    }
+  }
+</script>
 
-<div class="form-row">
-<label class="form-label">Session</label>
-<div class="form-input">
-
-<div class="slot-grid">
-
-<label class="slot-item"><input type="checkbox" name="slots" value="8.00_-_8.45">1st Hour</label>
-<label class="slot-item"><input type="checkbox" name="slots" value="9.10_-_9.55">2nd Hour</label>
-<label class="slot-item"><input type="checkbox" name="slots" value="10.00_-_10.45">3rd Hour</label>
-<label class="slot-item"><input type="checkbox" name="slots" value="10.50_-_11.35">4th Hour</label>
-<label class="slot-item"><input type="checkbox" name="slots" value="11.55_-_12.40">5th Hour</label>
-<label class="slot-item"><input type="checkbox" name="slots" value="12.45_-_1.30">6th Hour</label>
-
-</div>
-
-</div>
-</div>
-
-
-<div class="form-row">
-<label class="form-label">Reason</label>
-<div class="form-input">
-<input type="text" name="reason" required>
-</div>
-</div>
-
-
-<div class="form-row">
-<label class="form-label">Description</label>
-<div class="form-input">
-<textarea name="description"></textarea>
-</div>
-</div>
-
-
-<div style="text-align:right">
-<button type="submit">Cancel Class</button>
-</div>
-
-</form>
-
-</div>
-
-</body>
-</html>
+{% endblock %}
