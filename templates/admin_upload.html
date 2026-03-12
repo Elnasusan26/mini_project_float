@@ -1,61 +1,420 @@
 {% extends "admin_base.html" %}
 
+{% block title %}Upload Timetable{% endblock %}
+
 {% block content %}
 
-<h1 class="page-title">Upload Timetable Files</h1>
-<p class="page-subtitle">Upload all required input files</p>
+<style>
+  .page-header {
+    margin-bottom: 32px;
+  }
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .page-header p {
+    font-size: 15px;
+    color: var(--muted);
+  }
 
-<form class="upload-form" method="POST" enctype="multipart/form-data">
+  .upload-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 24px;
+  }
 
-  <div class="upload-grid">
+  .upload-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-bottom: 32px;
+  }
 
-    <div>
-      <label>Class Strength</label>
-      <input type="file" name="class_strength" required>
+  .file-field input[type="file"] {
+    display: none;
+  }
+
+  .file-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .file-field label.field-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .file-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1.5px dashed var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    background: var(--bg);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+
+  .file-box:hover {
+    border-color: var(--teal);
+    background: var(--teal-lt);
+  }
+
+  .file-box.selected {
+    border-color: var(--teal);
+    border-style: solid;
+    background: var(--teal-lt);
+  }
+
+  .file-info { flex: 1; overflow: hidden; }
+
+  .file-info .file-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .file-info .file-hint {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .file-box.selected .file-info .file-name {
+    color: var(--teal);
+  }
+
+  .file-btn {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--teal);
+    background: var(--white);
+    border: 1px solid var(--teal);
+    border-radius: 8px;
+    padding: 7px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background .15s, color .15s;
+  }
+
+  .file-btn:hover {
+    background: var(--teal);
+    color: var(--white);
+  }
+
+  /* Progress bar */
+  .upload-progress {
+    margin-bottom: 28px;
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--bg);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--teal);
+    border-radius: 99px;
+    transition: width 0.3s ease;
+  }
+
+  /* Submit */
+  .submit-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .upload-btn {
+    padding: 14px 36px;
+    background: var(--navy);
+    color: white;
+    border: none;
+    border-radius: 11px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .18s;
+  }
+
+  .upload-btn:hover { background: var(--teal); }
+  .upload-btn:disabled {
+    background: var(--border);
+    color: var(--muted);
+    cursor: not-allowed;
+  }
+
+  .upload-note {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Loading overlay */
+  .loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .loading-overlay.active { display: flex; }
+
+  .spinner {
+    width: 48px; height: 48px;
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-overlay p {
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+  }
+</style>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <p>Processing files and allocating rooms...</p>
+</div>
+
+<!-- Header -->
+<div class="page-header">
+  <h1>Upload Timetable Files</h1>
+  <p>Select all required Excel files to process and allocate classrooms automatically.</p>
+</div>
+
+<div class="upload-card">
+
+  <!-- Progress -->
+  <div class="upload-progress">
+    <div class="progress-header">
+      <span>Files Selected</span>
+      <span id="progressText">0 / 8</span>
     </div>
-
-    <div>
-      <label>Room Mapping</label>
-      <input type="file" name="room_mapping" required>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width: 0%"></div>
     </div>
-
-    <div>
-      <label>Class Type</label>
-      <input type="file" name="class_type" required>
-    </div>
-
-    <div>
-      <label>Teacher Subject Mapping</label>
-      <input type="file" name="teacher_subject" required>
-    </div>
-
-    <div>
-      <label>Parallel Classes</label>
-      <input type="file" name="parallel_classes" required>
-    </div>
-
-    <div>
-      <label>Student Mapping</label>
-      <input type="file" name="student_mapping" required>
-    </div>
-
-    <div>
-      <label>Timetables</label>
-      <input type="file" name="timetables" required>
-    </div>
-
-    <!-- ✅ LAB ROOM UPLOAD -->
-    <div>
-      <label>Lab Room Mapping</label>
-      <input type="file" name="lab_rooms" required>
-    </div>
-
   </div>
 
-  <button type="submit" class="primary-btn">
-    Upload All Files
-  </button>
+  <form method="POST" enctype="multipart/form-data" id="uploadForm">
+    <div class="upload-grid">
 
-</form>
+      <!-- Class Strength -->
+      <div class="file-field">
+        <label class="field-label">Class Strength</label>
+        <div class="file-box" id="box-class_strength"
+             onclick="document.getElementById('class_strength').click()">
+          <div class="file-info">
+            <div class="file-name" id="name-class_strength">No file chosen</div>
+            <div class="file-hint">.xlsx format required</div>
+          </div>
+          <span class="file-btn">Browse</span>
+        </div>
+        <input type="file" id="class_strength" name="class_strength"
+               accept=".xlsx" required
+               onchange="fileSelected(this, 'class_strength')">
+      </div>
+
+      <!-- Room Mapping -->
+      <div class="file-field">
+        <label class="field-label">Room Mapping</label>
+        <div class="file-box" id="box-room_mapping"
+             onclick="document.getElementById('room_mapping').click()">
+          <div class="file-info">
+            <div class="file-name" id="name-room_mapping">No file chosen</div>
+            <div class="file-hint">.xlsx format required</div>
+          </div>
+          <span class="file-btn">Browse</span>
+        </div>
+        <input type="file" id="room_mapping" name="room_mapping"
+               accept=".xlsx" required
+               onchange="fileSelected(this, 'room_mapping')">
+      </div>
+
+      <!-- Class Type -->
+      <div class="file-field">
+        <label class="field-label">Class Type</label>
+        <div class="file-box" id="box-class_type"
+             onclick="document.getElementById('class_type').click()">
+          <div class="file-info">
+            <div class="file-name" id="name-class_type">No file chosen</div>
+            <div class="file-hint">.xlsx format required</div>
+          </div>
+          <span class="file-btn">Browse</span>
+        </div>
+        <input type="file" id="class_type" name="class_type"
+               accept=".xlsx" required
+               onchange="fileSelected(this, 'class_type')">
+      </div>
+
+      <!-- Teacher Subject Mapping -->
+      <div class="file-field">
+        <label class="field-label">Teacher Subject Mapping</label>
+        <div class="file-box" id="box-teacher_subject"
+             onclick="document.getElementById('teacher_subject').click()">
+          <div class="file-info">
+            <div class="file-name" id="name-teacher_subject">No file chosen</div>
+            <div class="file-hint">.xlsx format required</div>
+          </div>
+          <span class="file-btn">Browse</span>
+        </div>
+        <input type="file" id="teacher_subject" name="teacher_subject"
+               accept=".xlsx" required
+               onchange="fileSelected(this, 'teacher_subject')">
+      </div>
+
+      <!-- Parallel Classes -->
+      <div class="file-field">
+        <label class="field-label">Parallel Classes</label>
+        <div class="file-box" id="box-parallel_classes"
+             onclick="document.getElementById('parallel_classes').click()">
+          <div class="file-info">
+            <div class="file-name" id="name-parallel_classes">No file chosen</div>
+            <div class="file-hint">.xlsx format required</div>
+          </div>
+          <span class="file-btn">Browse</span>
+        </div>
+        <input type="file" id="parallel_classes" name="parallel_classes"
+               accept=".xlsx" required
+               onchange="fileSelected(this, 'parallel_classes')">
+      </div>
+
+      <!-- Student Mapping -->
+      <div class="file-field">
+        <label class="field-label">Student Mapping</label>
+        <div class="file-box" id="box-student_mapping"
+             onclick="document.getElementById('student_mapping').click()">
+          <div class="file-info">
+            <div class="file-name" id="name-student_mapping">No file chosen</div>
+            <div class="file-hint">.xlsx format required</div>
+          </div>
+          <span class="file-btn">Browse</span>
+        </div>
+        <input type="file" id="student_mapping" name="student_mapping"
+               accept=".xlsx" required
+               onchange="fileSelected(this, 'student_mapping')">
+      </div>
+
+      <!-- Timetables -->
+      <div class="file-field">
+        <label class="field-label">Timetables</label>
+        <div class="file-box" id="box-timetables"
+             onclick="document.getElementById('timetables').click()">
+          <div class="file-info">
+            <div class="file-name" id="name-timetables">No file chosen</div>
+            <div class="file-hint">.xlsx format required</div>
+          </div>
+          <span class="file-btn">Browse</span>
+        </div>
+        <input type="file" id="timetables" name="timetables"
+               accept=".xlsx" required
+               onchange="fileSelected(this, 'timetables')">
+      </div>
+
+      <!-- Lab Room Mapping -->
+      <div class="file-field">
+        <label class="field-label">Lab Room Mapping</label>
+        <div class="file-box" id="box-lab_rooms"
+             onclick="document.getElementById('lab_rooms').click()">
+          <div class="file-info">
+            <div class="file-name" id="name-lab_rooms">No file chosen</div>
+            <div class="file-hint">.xlsx format required</div>
+          </div>
+          <span class="file-btn">Browse</span>
+        </div>
+        <input type="file" id="lab_rooms" name="lab_rooms"
+               accept=".xlsx" required
+               onchange="fileSelected(this, 'lab_rooms')">
+      </div>
+
+    </div>
+
+    <!-- Submit -->
+    <div class="submit-row">
+      <button type="submit" class="upload-btn" id="submitBtn" disabled>
+        Upload All Files
+      </button>
+      <span class="upload-note" id="uploadNote">Select all 8 files to enable upload</span>
+    </div>
+
+  </form>
+</div>
+
+<script>
+  const TOTAL = 8;
+  const selectedFiles = {};
+
+  function fileSelected(input, key) {
+    const box  = document.getElementById('box-' + key);
+    const name = document.getElementById('name-' + key);
+
+    if (input.files && input.files[0]) {
+      box.classList.add('selected');
+      name.textContent = input.files[0].name;
+      selectedFiles[key] = true;
+    }
+
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const selectedCount = Object.keys(selectedFiles).length;
+    const pct = Math.min((selectedCount / TOTAL) * 100, 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressText').textContent = selectedCount + ' / ' + TOTAL;
+
+    const btn  = document.getElementById('submitBtn');
+    const note = document.getElementById('uploadNote');
+
+    if (selectedCount >= TOTAL) {
+      btn.disabled = false;
+      note.textContent = 'All files ready — click to upload and allocate!';
+      note.style.color = 'var(--teal)';
+    } else {
+      btn.disabled = true;
+      note.textContent = 'Select all ' + TOTAL + ' files to enable upload';
+      note.style.color = '';
+    }
+  }
+
+  document.getElementById('uploadForm').addEventListener('submit', function() {
+    document.getElementById('loadingOverlay').classList.add('active');
+  });
+</script>
 
 {% endblock %}

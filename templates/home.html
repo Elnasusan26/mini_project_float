@@ -5,56 +5,200 @@
 {% block content %}
 
 <style>
-  .page-title {
+  .page-header {
+    margin-bottom: 32px;
+  }
+  .page-header h1 {
     font-size: 28px;
     font-weight: 700;
     color: var(--navy);
-    margin-bottom: 28px;
+    margin-bottom: 4px;
+  }
+  .page-header p {
+    font-size: 15px;
+    color: var(--muted);
   }
 
+  /* ── STAT CARDS ── */
   .overview-cards {
     display: flex;
+    flex-direction: row;
     gap: 20px;
-    flex-wrap: wrap;
+    margin-bottom: 32px;
   }
 
   .overview-card {
     background: var(--white);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 32px 40px;
+    padding: 32px 28px;
     flex: 1;
-    min-width: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: box-shadow .15s;
+  }
+
+  .overview-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+
+  .card-info {
     text-align: center;
   }
 
-  .overview-card h2 {
+  .card-info h2 {
     font-size: 48px;
     font-weight: 700;
     color: var(--navy);
+    line-height: 1;
     margin-bottom: 8px;
   }
 
-  .overview-card p {
+  .card-info p {
     font-size: 15px;
     color: var(--muted);
   }
+
+  /* ── RECENT ACTIVITY ── */
+  .section-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 28px;
+  }
+
+  .section-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .activity-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--bg);
+    border-radius: 10px;
+    transition: background .15s;
+  }
+
+  .activity-item:hover { background: #e8edf2; }
+
+  .activity-dot {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+    flex-shrink: 0;
+  }
+
+  .activity-dot.cancelled { background: #fee2e2; }
+
+  .activity-info { flex: 1; }
+
+  .activity-info .title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .activity-info .subtitle {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .activity-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .activity-badge.cancelled { background: #fee2e2; color: #b91c1c; }
+
+  .empty-state {
+    text-align: center;
+    padding: 32px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .overview-cards { flex-direction: column; }
+  }
 </style>
 
-<h1 class="page-title">System Overview</h1>
+<!-- Header -->
+<div class="page-header">
+  <h1>System Overview</h1>
+  <p>Welcome back, Administrator. Here's what's happening today.</p>
+</div>
 
+<!-- Stat Cards -->
 <div class="overview-cards">
   <div class="overview-card">
-    <h1>{{ permanent_count }}</h1>
-    <p>Permanent Classes</p>
+    <div class="card-info">
+      <h2>{{ permanent_count }}</h2>
+      <p>Permanent Classes</p>
+    </div>
   </div>
   <div class="overview-card">
-    <h1>{{ floating_count }}</h1>
-    <p>Floating Classes</p>
+    <div class="card-info">
+      <h2>{{ floating_count }}</h2>
+      <p>Floating Classes</p>
+    </div>
   </div>
   <div class="overview-card">
-   <h1>{{ allocated_count }}</h1>
-    <p>Allocated Classes</p>
+    <div class="card-info">
+      <h2>{{ allocated_count }}</h2>
+      <p>Allocated Classes</p>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="section-card">
+  <h3>🕐 Recent Activity</h3>
+  <div class="activity-list">
+
+    {% if recent_cancelled %}
+      {% for c in recent_cancelled %}
+        <div class="activity-item">
+          <div class="activity-dot cancelled">❌</div>
+          <div class="activity-info">
+            <div class="title">
+              {{ c.class_obj.name if c.class_obj else 'Class #' ~ c.class_id }} — class cancelled
+            </div>
+            <div class="subtitle">
+              {{ c.date.strftime('%d %b %Y') }} &bull; {{ c.slot }}
+              {% if c.reason %} &bull; {{ c.reason }}{% endif %}
+            </div>
+          </div>
+          <span class="activity-badge cancelled">Cancelled</span>
+        </div>
+      {% endfor %}
+
+    {% else %}
+      <div class="empty-state">
+        No recent activity yet. Cancel a class or upload a timetable to see activity here.
+      </div>
+    {% endif %}
+
   </div>
 </div>
 

@@ -1,153 +1,322 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Floating Class Timetable</title>
+  <title>Floating Class Timetable</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
+    :root {
+      --navy:    #1a3c4d;
+      --teal:    #1a7f7f;
+      --teal-lt: #e6f5f5;
+      --white:   #ffffff;
+      --bg:      #f0f4f8;
+      --text:    #1e2d3d;
+      --muted:   #6b7f90;
+      --border:  #dde5ed;
+    }
 
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-bottom: 40px;
-        }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 36px;
+    }
 
-        th, td {
-            border: 1px solid #444;
-            padding: 8px;
-            text-align: center;
-            vertical-align: middle;
-            min-width: 120px;
-        }
+    .page-header {
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-        th {
-            background-color: #f2f2f2;
-        }
+    .page-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--navy);
+    }
 
-        h2 {
-            margin-top: 40px;
-        }
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      transition: all .15s;
+    }
 
-        .allocated {
-            background-color: #caf6ca;
-        }
+    .back-btn:hover {
+      border-color: var(--teal);
+      color: var(--teal);
+    }
 
-        .unallocated {
-            background-color: #ffe6e6;
-        }
+    /* Class section */
+    .class-section {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 32px;
+      overflow: hidden;
+    }
 
-        .cancelled {
-            background-color: #ffcccc;
-            color: #900;
-            font-weight: bold;
-        }
+    .class-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border);
+      background: var(--white);
+    }
 
-        .lab-room {
-            font-size: 13px;
-            font-weight: bold;
-            color: #060609;
-            
-        }
-        .lab-period {
-            background-color: rgba(163, 181, 226, 0.488);
-        }
+    .class-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--navy);
+    }
 
-    </style>
+    .export-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      background: var(--navy);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background .15s;
+    }
+
+    .export-btn:hover { background: var(--teal); }
+
+    /* Table */
+    .table-scroll { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+
+    thead th {
+      background: var(--navy);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 13px 16px;
+      text-align: center;
+      white-space: nowrap;
+      border: 1px solid #2a5068;
+    }
+
+    thead th:first-child {
+      border-radius: 0;
+      text-align: left;
+      min-width: 110px;
+    }
+
+    tbody tr { border-bottom: 1px solid #c8d5e0; }
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody td {
+      padding: 16px 14px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 15px;
+      min-width: 130px;
+      border: 1px solid #c8d5e0;
+    }
+
+    td.day-col {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--navy);
+      text-align: left;
+      padding-left: 28px;
+      background: var(--bg);
+      white-space: nowrap;
+    }
+
+    /* Cell types */
+    .cell-allocated {
+      background: #e8f8e8;
+    }
+
+    .cell-unallocated {
+      background: #fff0f0;
+    }
+
+    .cell-cancelled {
+      background: #ffe0e0;
+      color: #b91c1c;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .cell-lab {
+      background: #dde8f8;
+    }
+
+    .cell-empty {
+      background: var(--white);
+      color: var(--muted);
+    }
+
+    .subject-name {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .room-name {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .cell-allocated .room-name { color: #2d7a2d; }
+    .cell-lab .room-name { color: #2255aa; }
+    .cell-unallocated .room-name { color: #b91c1c; }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 16px 28px;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+      font-size: 13px;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .legend-box {
+      width: 14px; height: 14px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .legend-box.allocated   { background: #e8f8e8; border: 1px solid #aaddaa; }
+    .legend-box.unallocated { background: #fff0f0; border: 1px solid #ffaaaa; }
+    .legend-box.cancelled   { background: #ffe0e0; border: 1px solid #ffaaaa; }
+    .legend-box.lab         { background: #dde8f8; border: 1px solid #aabbdd; }
+  </style>
 </head>
 
 <body>
 
-<h1>Floating Class Timetable</h1>
+<!-- Header -->
+<div class="page-header">
+  <h1>Floating Class Timetable</h1>
+  <a href="/admin" class="back-btn">
+    ← Back to Dashboard
+  </a>
+</div>
 
 {% for class_name, class_data in timetable.items() %}
-<h2>
-Class: {{ class_name }}
+<div class="class-section">
 
-<a href="{{ url_for('export_class_timetable', class_id=class_map[class_name]) }}">
-<button style="margin-left:20px;">Export Excel</button>
-</a>
+  <!-- Class Header -->
+  <div class="class-header">
+    <h2>Class: {{ class_name }}</h2>
+    <a href="{{ url_for('export_class_timetable', class_id=class_map[class_name]) }}"
+       class="export-btn">
+      ↓ Export Excel
+    </a>
+  </div>
 
-</h2>
-<table>
+  <!-- Table -->
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Day / Time</th>
+          {% for slot in slots %}
+            <th>{{ slot }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for day in days %}
+        <tr>
+          <td class="day-col">{{ day }}</td>
 
-<tr>
-    <th>Day / Time</th>
-    {% for slot in slots %}
-        <th>{{ slot }}</th>
-    {% endfor %}
-</tr>
+          {% for slot in slots %}
+            {% set key = (class_name, day, slot) %}
 
-{% for day in days %}
-<tr>
+            {% if key in cancelled_lookup %}
+              <td class="cell-cancelled">❌ Cancelled</td>
 
-<th>{{ day }}</th>
+            {% elif day in class_data and slot in class_data[day] %}
+              {% set entries = class_data[day][slot] %}
+              {% set rooms = entries | map(attribute='room') | list %}
+              {% set lab_rooms = entries | map(attribute='lab_rooms') | select | list %}
 
-{% for slot in slots %}
+              {% if lab_rooms %}
+                <td class="cell-lab">
+                  <div class="subject-name">{{ entries | map(attribute='subject') | join(' / ') }}</div>
+                  <div class="room-name">( {{ lab_rooms | join(', ') }} )</div>
+                </td>
 
-{% set key = (class_name, day, slot) %}
+              {% elif rooms[0] != '-' %}
+                <td class="cell-allocated">
+                  <div class="subject-name">{{ entries | map(attribute='subject') | join(' / ') }}</div>
+                  <div class="room-name">( {{ entries | map(attribute='room') | join(', ') }} )</div>
+                </td>
 
-{% if key in cancelled_lookup %}
+              {% else %}
+                <td class="cell-unallocated">
+                  <div class="subject-name">{{ entries | map(attribute='subject') | join(' / ') }}</div>
+                  <div class="room-name">No room assigned</div>
+                </td>
+              {% endif %}
 
-<td class="cancelled">
-❌ CANCELLED
-</td>
+            {% else %}
+              <td class="cell-empty">—</td>
+            {% endif %}
 
-{% elif day in class_data and slot in class_data[day] %}
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
-{% set entries = class_data[day][slot] %}
-{% set rooms = entries | map(attribute='room') | list %}
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-box allocated"></div> Allocated
+    </div>
+    <div class="legend-item">
+      <div class="legend-box lab"></div> Lab Session
+    </div>
+    <div class="legend-item">
+      <div class="legend-box unallocated"></div> Unallocated
+    </div>
+    <div class="legend-item">
+      <div class="legend-box cancelled"></div> Cancelled
+    </div>
+  </div>
 
-{% set lab_rooms = entries | map(attribute='lab_rooms') | select | list %}
-
-<td class="
-{% if lab_rooms %}
-lab-period
-{% elif rooms[0] != '-' %}
-allocated
-{% else %}
-unallocated
-{% endif %}
-">
-
-<strong>
-{{ entries | map(attribute='subject') | join(' / ') }}
-</strong>
-
-<br>
-
-{% set lab_rooms = entries | map(attribute='lab_rooms') | select | list %}
-
-{% if lab_rooms %}
-
-(
-{{ lab_rooms | join(', ') }}
-)
-
-{% else %}
-
-(
-{{ entries | map(attribute='room') | join(', ') }}
-)
-
-{% endif %}
-
-</td>
-
-{% else %}
-
-<td>-</td>
-
-{% endif %}
-
-{% endfor %}
-
-</tr>
-{% endfor %}
-
-</table>
-
+</div>
 {% endfor %}
 
 </body>
