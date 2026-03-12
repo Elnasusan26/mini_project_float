@@ -74,6 +74,12 @@
     background: var(--teal-lt);
   }
 
+  .file-box.error {
+    border-color: #e74c3c;
+    border-style: solid;
+    background: #fff0f0;
+  }
+
   .file-info { flex: 1; overflow: hidden; }
 
   .file-info .file-name {
@@ -91,9 +97,8 @@
     margin-top: 3px;
   }
 
-  .file-box.selected .file-info .file-name {
-    color: var(--teal);
-  }
+  .file-box.selected .file-info .file-name { color: var(--teal); }
+  .file-box.error .file-info .file-name { color: #b91c1c; }
 
   .file-btn {
     font-size: 13px;
@@ -115,9 +120,7 @@
   }
 
   /* Progress bar */
-  .upload-progress {
-    margin-bottom: 28px;
-  }
+  .upload-progress { margin-bottom: 28px; }
 
   .progress-header {
     display: flex;
@@ -169,10 +172,7 @@
     cursor: not-allowed;
   }
 
-  .upload-note {
-    font-size: 13px;
-    color: var(--muted);
-  }
+  .upload-note { font-size: 13px; color: var(--muted); }
 
   /* Loading overlay */
   .loading-overlay {
@@ -204,12 +204,67 @@
     font-size: 15px;
     font-weight: 600;
   }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .upload-grid { grid-template-columns: 1fr; }
+  }
 </style>
 
 <!-- Loading overlay -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
   <p>Processing files and allocating rooms...</p>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" style="
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 998;
+  align-items: center;
+  justify-content: center;
+">
+  <div style="
+    background: var(--white);
+    border-radius: 16px;
+    padding: 28px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  ">
+    <h3 style="font-size:18px; font-weight:700; color:var(--navy); margin-bottom:6px;">
+      ✅ Confirm File Upload
+    </h3>
+    <p style="font-size:13px; color:var(--muted); margin-bottom:18px;">
+      Please verify all files are correct before uploading.
+    </p>
+    <div id="confirmBody"></div>
+    <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px;">
+      <button onclick="closeConfirm()" style="
+        padding: 10px 20px;
+        background: var(--bg);
+        color: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      ">Go Back</button>
+      <button onclick="proceedUpload()" style="
+        padding: 10px 24px;
+        background: var(--navy);
+        color: white;
+        border: none;
+        border-radius: 9px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      ">Upload & Allocate</button>
+    </div>
+  </div>
 </div>
 
 <!-- Header -->
@@ -241,7 +296,7 @@
              onclick="document.getElementById('class_strength').click()">
           <div class="file-info">
             <div class="file-name" id="name-class_strength">No file chosen</div>
-            <div class="file-hint">.xlsx format required</div>
+            <div class="file-hint">Expected: class_strength.xlsx</div>
           </div>
           <span class="file-btn">Browse</span>
         </div>
@@ -257,7 +312,7 @@
              onclick="document.getElementById('room_mapping').click()">
           <div class="file-info">
             <div class="file-name" id="name-room_mapping">No file chosen</div>
-            <div class="file-hint">.xlsx format required</div>
+            <div class="file-hint">Expected: room_mapping.xlsx</div>
           </div>
           <span class="file-btn">Browse</span>
         </div>
@@ -273,7 +328,7 @@
              onclick="document.getElementById('class_type').click()">
           <div class="file-info">
             <div class="file-name" id="name-class_type">No file chosen</div>
-            <div class="file-hint">.xlsx format required</div>
+            <div class="file-hint">Expected: class_type.xlsx</div>
           </div>
           <span class="file-btn">Browse</span>
         </div>
@@ -289,7 +344,7 @@
              onclick="document.getElementById('teacher_subject').click()">
           <div class="file-info">
             <div class="file-name" id="name-teacher_subject">No file chosen</div>
-            <div class="file-hint">.xlsx format required</div>
+            <div class="file-hint">Expected: teacher_subject_mapping.xlsx</div>
           </div>
           <span class="file-btn">Browse</span>
         </div>
@@ -305,7 +360,7 @@
              onclick="document.getElementById('parallel_classes').click()">
           <div class="file-info">
             <div class="file-name" id="name-parallel_classes">No file chosen</div>
-            <div class="file-hint">.xlsx format required</div>
+            <div class="file-hint">Expected: parallel_classes.xlsx</div>
           </div>
           <span class="file-btn">Browse</span>
         </div>
@@ -321,7 +376,7 @@
              onclick="document.getElementById('student_mapping').click()">
           <div class="file-info">
             <div class="file-name" id="name-student_mapping">No file chosen</div>
-            <div class="file-hint">.xlsx format required</div>
+            <div class="file-hint">Expected: student_mapping.xlsx</div>
           </div>
           <span class="file-btn">Browse</span>
         </div>
@@ -337,7 +392,7 @@
              onclick="document.getElementById('timetables').click()">
           <div class="file-info">
             <div class="file-name" id="name-timetables">No file chosen</div>
-            <div class="file-hint">.xlsx format required</div>
+            <div class="file-hint">Expected: timetables.xlsx</div>
           </div>
           <span class="file-btn">Browse</span>
         </div>
@@ -353,7 +408,7 @@
              onclick="document.getElementById('lab_rooms').click()">
           <div class="file-info">
             <div class="file-name" id="name-lab_rooms">No file chosen</div>
-            <div class="file-hint">.xlsx format required</div>
+            <div class="file-hint">Expected: lab_rooms.xlsx</div>
           </div>
           <span class="file-btn">Browse</span>
         </div>
@@ -379,14 +434,38 @@
   const TOTAL = 8;
   const selectedFiles = {};
 
+  const expectedFiles = {
+    'class_strength':   'class_strength.xlsx',
+    'room_mapping':     'room_mapping.xlsx',
+    'class_type':       'class_type.xlsx',
+    'teacher_subject':  'teacher_subject_mapping.xlsx',
+    'parallel_classes': 'parallel_classes.xlsx',
+    'student_mapping':  'student_mapping.xlsx',
+    'timetables':       'timetables.xlsx',
+    'lab_rooms':        'lab_rooms.xlsx'
+  };
+
   function fileSelected(input, key) {
     const box  = document.getElementById('box-' + key);
     const name = document.getElementById('name-' + key);
 
     if (input.files && input.files[0]) {
-      box.classList.add('selected');
-      name.textContent = input.files[0].name;
-      selectedFiles[key] = true;
+      const uploadedName = input.files[0].name;
+      const expectedName = expectedFiles[key];
+
+      if (uploadedName !== expectedName) {
+        // Wrong file
+        box.classList.remove('selected');
+        box.classList.add('error');
+        name.textContent = 'Wrong file! Expected: ' + expectedName;
+        delete selectedFiles[key];
+      } else {
+        // Correct file
+        box.classList.remove('error');
+        box.classList.add('selected');
+        name.textContent = uploadedName;
+        selectedFiles[key] = uploadedName;
+      }
     }
 
     updateProgress();
@@ -412,9 +491,44 @@
     }
   }
 
-  document.getElementById('uploadForm').addEventListener('submit', function() {
-    document.getElementById('loadingOverlay').classList.add('active');
+  document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const summary = [
+      { label: 'Class Strength',         key: 'class_strength' },
+      { label: 'Room Mapping',            key: 'room_mapping' },
+      { label: 'Class Type',              key: 'class_type' },
+      { label: 'Teacher Subject Mapping', key: 'teacher_subject' },
+      { label: 'Parallel Classes',        key: 'parallel_classes' },
+      { label: 'Student Mapping',         key: 'student_mapping' },
+      { label: 'Timetables',              key: 'timetables' },
+      { label: 'Lab Room Mapping',        key: 'lab_rooms' },
+    ];
+
+    let rows = '';
+    summary.forEach(item => {
+      const fileName = document.getElementById('name-' + item.key).textContent;
+      rows += `
+        <div style="display:flex; justify-content:space-between; align-items:center;
+                    padding: 9px 12px; background: var(--bg); border-radius: 8px; margin-bottom: 8px;">
+          <span style="font-size:13px; color:var(--muted); font-weight:500;">${item.label}</span>
+          <span style="font-size:13px; color:var(--teal); font-weight:600;">${fileName}</span>
+        </div>`;
+    });
+
+    document.getElementById('confirmBody').innerHTML = rows;
+    document.getElementById('confirmModal').style.display = 'flex';
   });
+
+  function closeConfirm() {
+    document.getElementById('confirmModal').style.display = 'none';
+  }
+
+  function proceedUpload() {
+    document.getElementById('confirmModal').style.display = 'none';
+    document.getElementById('loadingOverlay').classList.add('active');
+    document.getElementById('uploadForm').submit();
+  }
 </script>
 
 {% endblock %}
