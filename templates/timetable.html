@@ -1,42 +1,200 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Timetable</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Timetable (Normalized View)</h1>
+{% block title %}Class Timetable{% endblock %}
+
+{% block content %}
+
+<style>
+  .page-header {
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+
+  .search-input {
+    padding: 10px 20px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 15px;
+    color: var(--text);
+    background: var(--white);
+    outline: none;
+    width: 280px;
+  }
+
+  .search-input:focus {
+    border-color: var(--teal);
+  }
+
+  /* Class section */
+  .class-section {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+
+  .class-header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .class-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+
+  .table-scroll { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+  }
+
+  thead th {
+    background: var(--navy);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 13px 16px;
+    text-align: center;
+    white-space: nowrap;
+    border: 1px solid #2a5068;
+  }
+
+  thead th:first-child { text-align: left; padding-left: 24px; }
+
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg); }
+
+  tbody td {
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--text);
+    text-align: center;
+    vertical-align: middle;
+    border: 1px solid var(--border);
+  }
+
+  tbody td:first-child { text-align: left; padding-left: 24px; font-weight: 600; color: var(--navy); }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .badge-yes  { background: #e6f9f0; color: #1a7f4f; }
+  .badge-no   { background: var(--bg); color: var(--muted); }
+  .badge-lab  { background: #dde8f8; color: #2255aa; }
+  .badge-batch { background: var(--teal-lt); color: var(--teal); }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+</style>
+
+<!-- Header -->
+<div class="page-header">
+  <h1>Class Timetable</h1>
+  <input type="text" class="search-input" id="classSearch"
+    placeholder="🔍 Search class..."
+    oninput="filterClasses()">
+</div>
 
 {% for class_name, rows in timetable.items() %}
-<h2>Class: {{ class_name }}</h2>
+<div class="class-section">
 
-<table border="1" cellpadding="6">
-    <tr>
-        <th>Day</th>
-        <th>Time Slot</th>
-        <th>Subject</th>
-        <th>Teacher</th>
-        <th>Room</th>
-        <th>Lab</th>
-        <th>Floating</th>
-        <th>Batch</th>
-    </tr>
+  <div class="class-header">
+    <h2>Class: {{ class_name }}</h2>
+  </div>
 
-    {% for r in rows %}
-    <tr>
-        <td>{{ r.Day }}</td>
-        <td>{{ r["Time Slot"] }}</td>
-        <td>{{ r.Subject }}</td>
-        <td>{{ r.Teacher }}</td>
-        <td>{{ r.Room }}</td>
-        <td>{{ r.Lab }}</td>
-        <td>{{ r.Floating }}</td>
-        <td>{{ r.Batch }}</td>
-    </tr>
-    {% endfor %}
-</table>
-<br>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Day</th>
+          <th>Time Slot</th>
+          <th>Subject</th>
+          <th>Teacher</th>
+          <th>Room</th>
+          <th>Lab</th>
+          <th>Floating</th>
+          <th>Batch</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if rows %}
+          {% for r in rows %}
+          <tr>
+            <td>{{ r.Day }}</td>
+            <td>{{ r["Time Slot"] }}</td>
+            <td>{{ r.Subject }}</td>
+            <td>{{ r.Teacher if r.Teacher else '—' }}</td>
+            <td>{{ r.Room if r.Room else '—' }}</td>
+            <td>
+              {% if r.Lab == True or r.Lab == 'True' or r.Lab == 1 %}
+                <span class="badge badge-lab">Lab</span>
+              {% else %}
+                <span class="badge badge-no">No</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if r.Floating == True or r.Floating == 'True' or r.Floating == 1 %}
+                <span class="badge badge-yes">Yes</span>
+              {% else %}
+                <span class="badge badge-no">No</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if r.Batch and r.Batch != 'nan' and r.Batch != '' %}
+                <span class="badge badge-batch">{{ r.Batch }}</span>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8">
+              <div class="empty-state">No timetable entries found for this class.</div>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
 {% endfor %}
 
-</body>
-</html>
+<script>
+  function filterClasses() {
+    const raw = document.getElementById('classSearch').value.toLowerCase();
+    const query = raw.replace(/[\s_\-]/g, '');
+    document.querySelectorAll('.class-section').forEach(section => {
+      const raw_title = section.querySelector('.class-header h2').textContent.toLowerCase();
+      const title = raw_title.replace(/[\s_\-]/g, '');
+      section.style.display = title.includes(query) ? 'block' : 'none';
+    });
+  }
+</script>
+
+{% endblock %}
