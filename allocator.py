@@ -62,8 +62,7 @@ def allocate_rooms():
         TimetableEntry.is_lab_hour == False
     ).all()
 
-    permanent_rooms = Room.query.filter_by(is_permanent=True).all()
-
+    available_rooms = Room.query.order_by(Room.capacity).all()
 
     # ---------------------------------------------------
     # STEP 4: Track occupied rooms (permanent classes)
@@ -89,16 +88,19 @@ def allocate_rooms():
 
         cls = Class.query.get(entry.class_id)
 
-        for room in permanent_rooms:
+        for room in available_rooms:
 
+            # Room must fit class strength
             if room.capacity < cls.strength:
                 continue
 
             key = (entry.day, slot, room.id)
 
+            # Skip if room already used in this slot
             if key in occupied:
                 continue
 
+            # Assign room
             entry.room_id = room.id
             occupied.add(key)
 

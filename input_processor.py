@@ -95,17 +95,37 @@ def process_inputs():
 
     for _, r in df.iterrows():
 
-        cls = class_map.get(str(r[class_col]).strip())
+        class_name = str(r[class_col]).strip()
 
-        if not cls:
-            continue
+        # Get class if exists
+        cls = class_map.get(class_name)
 
-        db.session.add(Room(
-            name=str(r["room"]).strip(),
-            capacity=int(r["capacity"]),
-            is_permanent=True,
-            owner_class_id=cls.id
-        ))
+        room_name = str(r["room"]).strip()
+        capacity = int(r["capacity"])
+
+        # -------------------------------------------------
+        # Permanent room (belongs to a class)
+        # -------------------------------------------------
+        if cls:
+
+            db.session.add(Room(
+                name=room_name,
+                capacity=capacity,
+                is_permanent=True,
+                owner_class_id=cls.id
+            ))
+
+        # -------------------------------------------------
+        # Floating room (no class owner)
+        # -------------------------------------------------
+        else:
+
+            db.session.add(Room(
+                name=room_name,
+                capacity=capacity,
+                is_permanent=False,
+                owner_class_id=None
+            ))
 
 
     # -------------------------------------------------
