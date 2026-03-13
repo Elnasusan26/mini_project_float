@@ -1,234 +1,184 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Floating Class Timetable</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+{% extends "base.html" %}
 
-    :root {
-      --navy:    #1a3c4d;
-      --teal:    #1a7f7f;
-      --teal-lt: #e6f5f5;
-      --white:   #ffffff;
-      --bg:      #f0f4f8;
-      --text:    #1e2d3d;
-      --muted:   #6b7f90;
-      --border:  #dde5ed;
-    }
+{% block title %}Floating Class Timetable{% endblock %}
 
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      padding: 36px;
-    }
+{% block content %}
 
-    .page-header {
-      margin-bottom: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+<style>
+  .page-header {
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
 
-    .page-header h1 {
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--navy);
-    }
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--navy);
+  }
 
-    .back-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 9px 18px;
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--muted);
-      text-decoration: none;
-      transition: all .15s;
-    }
+  /* Class section */
+  .class-section {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
 
-    .back-btn:hover {
-      border-color: var(--teal);
-      color: var(--teal);
-    }
+  .class-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--white);
+  }
 
-    /* Class section */
-    .class-section {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      margin-bottom: 32px;
-      overflow: hidden;
-    }
+  .class-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--navy);
+  }
 
-    .class-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px 28px;
-      border-bottom: 1px solid var(--border);
-      background: var(--white);
-    }
+  .export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    background: var(--navy);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .15s;
+  }
 
-    .class-header h2 {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--navy);
-    }
+  .export-btn:hover { background: var(--teal); }
 
-    .export-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 18px;
-      background: var(--navy);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      transition: background .15s;
-    }
+  /* Table */
+  .table-scroll { overflow-x: auto; }
 
-    .export-btn:hover { background: var(--teal); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 700px;
+  }
 
-    /* Table */
-    .table-scroll { overflow-x: auto; }
+  thead th {
+    background: var(--navy);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 13px 16px;
+    text-align: center;
+    white-space: nowrap;
+    border: 1px solid #2a5068;
+  }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 700px;
-    }
+  thead th:first-child {
+    text-align: left;
+    min-width: 110px;
+  }
 
-    thead th {
-      background: var(--navy);
-      color: #fff;
-      font-size: 15px;
-      font-weight: 600;
-      padding: 13px 16px;
-      text-align: center;
-      white-space: nowrap;
-      border: 1px solid #2a5068;
-    }
+  tbody tr { border-bottom: 1px solid #c8d5e0; }
+  tbody tr:last-child { border-bottom: none; }
 
-    thead th:first-child {
-      border-radius: 0;
-      text-align: left;
-      min-width: 110px;
-    }
+  tbody td {
+    padding: 16px 14px;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 15px;
+    min-width: 130px;
+    border: 1px solid #c8d5e0;
+  }
 
-    tbody tr { border-bottom: 1px solid #c8d5e0; }
-    tbody tr:last-child { border-bottom: none; }
+  td.day-col {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--navy);
+    text-align: left;
+    padding-left: 28px;
+    background: var(--bg);
+    white-space: nowrap;
+  }
 
-    tbody td {
-      padding: 16px 14px;
-      text-align: center;
-      vertical-align: middle;
-      font-size: 15px;
-      min-width: 130px;
-      border: 1px solid #c8d5e0;
-    }
+  /* Cell types */
+  .cell-allocated  { background: #e8f8e8; }
+  .cell-unallocated { background: #fff0f0; }
+  .cell-cancelled  { background: #ffe0e0; color: #b91c1c; font-weight: 700; font-size: 13px; }
+  .cell-lab        { background: #dde8f8; }
+  .cell-empty      { background: var(--white); color: var(--muted); }
 
-    td.day-col {
-      font-weight: 700;
-      font-size: 15px;
-      color: var(--navy);
-      text-align: left;
-      padding-left: 28px;
-      background: var(--bg);
-      white-space: nowrap;
-    }
+  .subject-name {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
 
-    /* Cell types */
-    .cell-allocated {
-      background: #e8f8e8;
-    }
+  .room-name {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+  }
 
-    .cell-unallocated {
-      background: #fff0f0;
-    }
+  .cell-allocated .room-name  { color: #2d7a2d; }
+  .cell-lab .room-name        { color: #2255aa; }
+  .cell-unallocated .room-name { color: #b91c1c; }
 
-    .cell-cancelled {
-      background: #ffe0e0;
-      color: #b91c1c;
-      font-weight: 700;
-      font-size: 13px;
-    }
+  /* Legend */
+  .legend {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 28px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+    font-size: 13px;
+    color: var(--muted);
+    flex-wrap: wrap;
+  }
 
-    .cell-lab {
-      background: #dde8f8;
-    }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
 
-    .cell-empty {
-      background: var(--white);
-      color: var(--muted);
-    }
+  .legend-box {
+    width: 14px; height: 14px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
 
-    .subject-name {
-      font-weight: 700;
-      font-size: 15px;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-
-    .room-name {
-      font-size: 14px;
-      color: var(--muted);
-      font-weight: 500;
-    }
-
-    .cell-allocated .room-name { color: #2d7a2d; }
-    .cell-lab .room-name { color: #2255aa; }
-    .cell-unallocated .room-name { color: #b91c1c; }
-
-    /* Legend */
-    .legend {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      padding: 16px 28px;
-      border-top: 1px solid var(--border);
-      background: var(--bg);
-      font-size: 13px;
-      color: var(--muted);
-      flex-wrap: wrap;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-    }
-
-    .legend-box {
-      width: 14px; height: 14px;
-      border-radius: 4px;
-      flex-shrink: 0;
-    }
-
-    .legend-box.allocated   { background: #e8f8e8; border: 1px solid #aaddaa; }
-    .legend-box.unallocated { background: #fff0f0; border: 1px solid #ffaaaa; }
-    .legend-box.cancelled   { background: #ffe0e0; border: 1px solid #ffaaaa; }
-    .legend-box.lab         { background: #dde8f8; border: 1px solid #aabbdd; }
-  </style>
-</head>
-
-<body>
+  .legend-box.allocated   { background: #e8f8e8; border: 1px solid #aaddaa; }
+  .legend-box.unallocated { background: #fff0f0; border: 1px solid #ffaaaa; }
+  .legend-box.cancelled   { background: #ffe0e0; border: 1px solid #ffaaaa; }
+  .legend-box.lab         { background: #dde8f8; border: 1px solid #aabbdd; }
+</style>
 
 <!-- Header -->
 <div class="page-header">
   <h1>Floating Class Timetable</h1>
-  <a href="/admin" class="back-btn">
-    ← Back to Dashboard
-  </a>
+  <input type="text" id="classSearch" placeholder=" Search class..."
+    oninput="filterClasses()"
+    style="
+      padding: 10px 16px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--white);
+      outline: none;
+      width: 420px;
+      font-size: 15px;
+      padding: 12px 20px;
+    ">
 </div>
 
 {% for class_name, class_data in timetable.items() %}
@@ -285,7 +235,7 @@
               {% else %}
                 <td class="cell-unallocated">
                   <div class="subject-name">{{ entries | map(attribute='subject') | join(' / ') }}</div>
-                  <div class="room-name">No room assigned</div>
+                  <div class="room-name">-</div>
                 </td>
               {% endif %}
 
@@ -319,5 +269,15 @@
 </div>
 {% endfor %}
 
-</body>
-</html>
+<script>
+  function filterClasses() {
+    const raw = document.getElementById('classSearch').value.toLowerCase();
+    const query = raw.replace(/[\s_\-]/g, '');
+    document.querySelectorAll('.class-section').forEach(section => {
+      const raw_title = section.querySelector('.class-header h2').textContent.toLowerCase();
+      const title = raw_title.replace(/[\s_\-]/g, '');
+      section.style.display = title.includes(query) ? 'block' : 'none';
+    });
+  }
+</script>
+{% endblock %}
