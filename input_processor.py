@@ -1,7 +1,7 @@
 import pandas as pd
 from models import db, Class, Room, Teacher, Subject, TimetableEntry, User,TeachingAssignment
 from utils.normalize import normalize_slot, normalize_subject
-from models import Notification
+
 
 
 # -------------------------------------------------
@@ -56,7 +56,6 @@ def process_inputs():
     print("\n========== INPUT PROCESSOR START ==========\n")
 
     # RESET ACADEMIC TABLES
-    Notification.query.delete()
     TimetableEntry.query.delete()
     TeachingAssignment.query.delete() 
     Subject.query.delete()

@@ -11,7 +11,7 @@ import pandas as pd
 
 from models import (
     db, User, Class, Room, Subject,
-    TimetableEntry, CancelledClass, Notification, TeachingAssignment
+    TimetableEntry, CancelledClass, TeachingAssignment
 )
 
 from input_processor import process_inputs, process_lab_rooms
@@ -77,32 +77,6 @@ def role_required(role):
             return f(*args, **kwargs)
         return wrapper
     return decorator
-
-
-# ==============================================================
-# NOTIFICATION CONTEXT (for bell)
-# ==============================================================
-
-@app.context_processor
-def inject_notifications():
-
-    if "user_id" not in session:
-        return dict(notifications=[], unread_count=0)
-
-    notifications = Notification.query.filter_by(
-        user_id=session["user_id"]
-    ).order_by(Notification.created_at.desc()).limit(5).all()
-
-    unread_count = Notification.query.filter_by(
-        user_id=session["user_id"],
-        is_read=False
-    ).count()
-
-    return dict(
-        notifications=notifications,
-        unread_count=unread_count
-    )
-
 
 # ==============================================================
 # LOGIN
@@ -293,23 +267,6 @@ def cancel_class():
             )
 
             db.session.add(cancelled)
-
-            # Create notifications
-            message = f"{cls.name} class cancelled on {date} ({slot})"
-
-            students = User.query.filter_by(
-                class_id=class_id,
-                role="student"
-            ).all()
-
-            for s in students:
-                db.session.add(Notification(user_id=s.id, message=message))
-
-            teachers = User.query.filter_by(role="teacher").all()
-
-            for t in teachers:
-                db.session.add(Notification(user_id=t.id, message=message))
-
         db.session.commit()
 
         allocate_rooms()
