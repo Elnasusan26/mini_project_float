@@ -18,11 +18,6 @@ from input_processor import process_inputs, process_lab_rooms
 from allocator import allocate_rooms
 from utils.normalize import normalize_slot
 
-
-# ==============================================================
-# APP INIT
-# ==============================================================
-
 app = Flask(__name__)
 app.secret_key = "floated-secret"
 
@@ -34,11 +29,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 db.init_app(app)
-
-
-# ==============================================================
-# CONSTANTS
-# ==============================================================
 
 TIME_SLOTS = list(map(normalize_slot, [
     "8.00-8.45",
@@ -53,11 +43,6 @@ DAYS = [
     "MONDAY", "TUESDAY", "WEDNESDAY",
     "THURSDAY", "FRIDAY", "SATURDAY"
 ]
-
-
-# ==============================================================
-# AUTH HELPERS
-# ==============================================================
 
 def login_required(f):
     @wraps(f)
@@ -78,9 +63,6 @@ def role_required(role):
         return wrapper
     return decorator
 
-# ==============================================================
-# LOGIN
-# ==============================================================
 
 @app.route("/", methods=["GET", "POST"])
 def login():
@@ -112,10 +94,6 @@ def login():
     return render_template("login.html")
 
 
-# ==============================================================
-# ADMIN DASHBOARD
-# ==============================================================
-
 @app.route("/admin")
 @login_required
 @role_required("admin")
@@ -129,10 +107,7 @@ def admin_dashboard():
         class_category="floating"
     ).count()
 
-    # -----------------------------------
-    # CALCULATE ALLOCATED CLASSES
-    # -----------------------------------
-
+   
     from sqlalchemy import func, case
 
     subquery = (
@@ -164,10 +139,6 @@ def admin_dashboard():
         .scalar()
     )
 
-    # -----------------------------------
-    # RECENT ACTIVITY
-    # -----------------------------------
-
     recent_cancelled = (
         CancelledClass.query
         .order_by(CancelledClass.id.desc())
@@ -183,10 +154,6 @@ def admin_dashboard():
         recent_cancelled=recent_cancelled
     )
 
-
-# ==============================================================
-# ADMIN UPLOAD
-# ==============================================================
 
 @app.route("/admin_upload", methods=["GET", "POST"])
 @login_required
@@ -223,10 +190,6 @@ def admin_upload():
 
     return render_template("admin_upload.html")
 
-
-# ==============================================================
-# CANCEL CLASS
-# ==============================================================
 
 @app.route("/admin/cancel_class", methods=["GET", "POST"])
 @login_required
@@ -280,11 +243,6 @@ def cancel_class():
         classes=classes
     )
 
-
-# ==============================================================
-# VIEW CANCELLED CLASSES
-# ==============================================================
-
 @app.route("/admin/cancelled_classes")
 @login_required
 @role_required("admin")
@@ -299,10 +257,6 @@ def cancelled_classes():
         cancelled=cancelled
     )
 
-
-# ==============================================================
-# DELETE CANCELLED CLASS
-# ==============================================================
 
 @app.route("/admin/delete_cancelled/<int:id>", endpoint="delete_cancelled")
 @login_required
@@ -341,10 +295,6 @@ def delete_cancelled(id):
     return redirect(url_for("cancelled_classes"))
 
 
-# ==============================================================
-# VIEW FLOATING TIMETABLE
-# ==============================================================
-
 @app.route("/view/timetable")
 @app.route("/view/floating_timetable")
 @login_required
@@ -370,10 +320,6 @@ def view_floating_timetable():
             "lab_rooms": e.lab_rooms,
             "batch": e.batch
         })
-
-    # -------------------------------------------------
-    # GET CANCELLED CLASSES
-    # -------------------------------------------------
 
     today = datetime.today().date()
 
@@ -404,11 +350,6 @@ def view_floating_timetable():
         class_map=class_map
     )
 
-
-# ==============================================================
-# TEACHER DASHBOARD
-# ==============================================================
-
 @app.route("/teacher")
 @login_required
 @role_required("teacher")
@@ -434,7 +375,6 @@ def teacher_dashboard():
         print(e.subject.name if e.subject else None,
               e.class_obj.name if e.class_obj else None)
 
-    # CANCELLED LOOKUP
     today = datetime.today().date()
 
     cancelled = CancelledClass.query.filter(
@@ -454,11 +394,6 @@ def teacher_dashboard():
         cancelled_lookup=cancelled_lookup
     )
 
-
-# ==============================================================
-# STUDENT DASHBOARD
-# ==============================================================
-
 @app.route("/student")
 @login_required
 @role_required("student")
@@ -471,10 +406,6 @@ def student_dashboard():
     entries = TimetableEntry.query.filter_by(
         class_id=user.class_id
     ).all()
-
-    # -------------------------------------------------
-    # CANCELLED LOOKUP
-    # -------------------------------------------------
 
     today = datetime.today().date()
 
@@ -498,11 +429,6 @@ def student_dashboard():
         class_name=cls.name,
         cancelled_lookup=cancelled_lookup
     )
-
-
-# ==============================================================
-# LOGOUT
-# ==============================================================
 
 @app.route("/logout")
 def logout():
@@ -534,15 +460,11 @@ def export_class_timetable(class_id):
     entries = TimetableEntry.query.filter_by(class_id=class_id)\
         .order_by(TimetableEntry.day, TimetableEntry.slot)\
         .all()
-
-    # create grid dictionary
     grid = {day: {slot: "-" for slot in TIME_SLOTS} for day in DAYS}
 
     for e in entries:
 
         subject = e.subject.name if e.subject else "-"
-
-        # check lab rooms first
         if e.lab_rooms:
             value = f"{subject} ({e.lab_rooms})"
         else:
@@ -550,8 +472,6 @@ def export_class_timetable(class_id):
             value = f"{subject} ({room})"
 
         grid[e.day][normalize_slot(e.slot)] = value
-
-    # convert to dataframe
     data = []
 
     for day in DAYS:
@@ -574,12 +494,6 @@ def export_class_timetable(class_id):
         download_name=f"{cls.name}_timetable.xlsx",
         as_attachment=True
     )
-
-
-# ==============================================================
-# MAIN
-# ==============================================================
-
 if __name__ == "__main__":
 
     with app.app_context():

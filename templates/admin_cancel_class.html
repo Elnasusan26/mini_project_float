@@ -62,8 +62,6 @@
   }
 
   textarea { height: 110px; resize: vertical; }
-
-  /* Session slots */
   .slot-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -118,14 +116,12 @@
     margin-top: 1px;
   }
 
-  /* Divider */
   .form-divider {
     border: none;
     border-top: 1px solid var(--border);
     margin: 28px 0;
   }
 
-  /* Submit row */
   .submit-row {
     display: flex;
     justify-content: flex-end;
@@ -166,8 +162,6 @@
 
   .submit-btn:hover { background: var(--teal); }
 </style>
-
-<!-- Header -->
 <div class="page-header">
   <h1>Cancel Classroom Allocation</h1>
   <p>Select a class, date, and sessions to cancel and reallocate rooms.</p>
@@ -176,7 +170,6 @@
 <div class="form-card">
   <form method="POST">
 
-  <!-- Class + Date side by side -->
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
 
       <div class="form-group" style="margin-bottom: 0;">
@@ -196,8 +189,6 @@
     </div>  
 
     <hr class="form-divider">
-
-    <!-- Session -->
     <div class="form-group">
       <label class="group-label">Sessions to Cancel</label>
       <div class="slot-grid">
@@ -260,22 +251,16 @@
     </div>
 
     <hr class="form-divider">
-
-    <!-- Reason -->
     <div class="form-group">
       <label class="group-label">Reason</label>
       <input type="text" name="reason" placeholder="e.g. Staff meeting, Holiday..."
              required>
     </div>
-
-    <!-- Description -->
     <div class="form-group">
       <label class="group-label">Description <span style="color:var(--muted);font-weight:400">(optional)</span></label>
       <textarea name="description"
                 placeholder="Add any additional details..."></textarea>
     </div>
-
-    <!-- Submit -->
     <div class="submit-row">
       <a href="/admin" class="cancel-btn">Back</a>
       <button type="submit" class="submit-btn">Cancel Class</button>

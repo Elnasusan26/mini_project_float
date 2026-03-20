@@ -8,10 +8,6 @@ def allocate_rooms():
     print("\n========== ALLOCATOR START ==========")
 
     today = date.today()
-
-    # ---------------------------------------------------
-    # STEP 1: Remove allocations for cancelled classes
-    # ---------------------------------------------------
     cancelled = CancelledClass.query.filter(
     CancelledClass.date >= today
 ).all()
@@ -38,11 +34,6 @@ def allocate_rooms():
                 e.room_id = None
 
     db.session.commit()
-
-
-    # ---------------------------------------------------
-    # STEP 2: Clear all floating allocations (re-optimization)
-    # ---------------------------------------------------
     floating_allocated = TimetableEntry.query.filter(
         TimetableEntry.is_floating == True,
         TimetableEntry.room_id != None
@@ -53,20 +44,12 @@ def allocate_rooms():
 
     db.session.commit()
 
-
-    # ---------------------------------------------------
-    # STEP 3: Get floating entries needing rooms
-    # ---------------------------------------------------
     floating_entries = TimetableEntry.query.filter(
         TimetableEntry.is_floating == True,
         TimetableEntry.is_lab_hour == False
     ).all()
 
     available_rooms = Room.query.order_by(Room.capacity).all()
-
-    # ---------------------------------------------------
-    # STEP 4: Track occupied rooms (permanent classes)
-    # ---------------------------------------------------
     occupied = set()
 
     for e in TimetableEntry.query.filter(
@@ -79,28 +62,22 @@ def allocate_rooms():
         occupied.add((e.day, slot, e.room_id))
 
 
-    # ---------------------------------------------------
-    # STEP 5: Allocate floating classes
-    # ---------------------------------------------------
     for entry in floating_entries:
 
         slot = normalize_slot(entry.slot)
 
         cls = Class.query.get(entry.class_id)
 
-        for room in available_rooms:
-
-            # Room must fit class strength
+        for room in available_rooms
+            
             if room.capacity < cls.strength:
                 continue
 
             key = (entry.day, slot, room.id)
 
-            # Skip if room already used in this slot
             if key in occupied:
                 continue
 
-            # Assign room
             entry.room_id = room.id
             occupied.add(key)
 
