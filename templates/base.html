@@ -279,46 +279,6 @@ Logout
 <!-- MAIN CONTENT -->
 <main class="main-content">
 
-{% if session.role != "admin" %}
-
-<div class="notification-wrapper">
-
-<div class="bell" onclick="toggleNotifications()">
-🔔
-
-{% if unread_count > 0 %}
-<span class="badge">{{ unread_count }}</span>
-{% endif %}
-
-</div>
-
-<div id="notificationMenu" class="notification-dropdown">
-
-<div class="notification-header">
-Notifications
-</div>
-
-{% for n in notifications %}
-
-<div class="notification-item">
-{{ n.message }}
-<small>{{ n.created_at.strftime("%d %b %Y %H:%M") }}</small>
-</div>
-
-{% else %}
-
-<div class="notification-item">
-No notifications
-</div>
-
-{% endfor %}
-
-</div>
-
-</div>
-
-{% endif %}
-
 {% block content %}{% endblock %}
 
 </main>

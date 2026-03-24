@@ -155,10 +155,6 @@ def admin_dashboard():
         class_category="floating"
     ).count()
 
-    # -----------------------------------
-    # CALCULATE ALLOCATED CLASSES
-    # -----------------------------------
-
     from sqlalchemy import func, case
 
     subquery = (
@@ -189,10 +185,6 @@ def admin_dashboard():
         .filter(subquery.c.total == subquery.c.allocated)
         .scalar()
     )
-
-    # -----------------------------------
-    # RECENT ACTIVITY
-    # -----------------------------------
 
     recent_cancelled = (
         CancelledClass.query
@@ -294,7 +286,6 @@ def cancel_class():
 
             db.session.add(cancelled)
 
-            # Create notifications
             message = f"{cls.name} class cancelled on {date} ({slot})"
 
             students = User.query.filter_by(
@@ -414,10 +405,6 @@ def view_floating_timetable():
             "batch": e.batch
         })
 
-    # -------------------------------------------------
-    # GET CANCELLED CLASSES
-    # -------------------------------------------------
-
     today = datetime.today().date()
 
     cancelled = CancelledClass.query.filter(
@@ -438,8 +425,15 @@ def view_floating_timetable():
 
     class_map = {c.name: c.id for c in Class.query.all()}
 
+    role = session.get('role')
+
+    if role == 'teacher' or role == 'student':
+        template = 'floating_timetable_grid_teacher.html'
+    else:
+        template = 'floating_timetable_grid.html'
+
     return render_template(
-        "floating_timetable_grid.html",
+        template,
         timetable=raw,
         slots=TIME_SLOTS,
         days=DAYS,
@@ -473,11 +467,6 @@ def teacher_dashboard():
         .all()
     )
 
-    for e in entries:
-        print(e.subject.name if e.subject else None,
-              e.class_obj.name if e.class_obj else None)
-
-    # CANCELLED LOOKUP
     today = datetime.today().date()
 
     cancelled = CancelledClass.query.filter(
@@ -514,10 +503,6 @@ def student_dashboard():
     entries = TimetableEntry.query.filter_by(
         class_id=user.class_id
     ).all()
-
-    # -------------------------------------------------
-    # CANCELLED LOOKUP
-    # -------------------------------------------------
 
     today = datetime.today().date()
 
@@ -578,14 +563,12 @@ def export_class_timetable(class_id):
         .order_by(TimetableEntry.day, TimetableEntry.slot)\
         .all()
 
-    # create grid dictionary
     grid = {day: {slot: "-" for slot in TIME_SLOTS} for day in DAYS}
 
     for e in entries:
 
         subject = e.subject.name if e.subject else "-"
 
-        # check lab rooms first
         if e.lab_rooms:
             value = f"{subject} ({e.lab_rooms})"
         else:
@@ -594,7 +577,6 @@ def export_class_timetable(class_id):
 
         grid[e.day][normalize_slot(e.slot)] = value
 
-    # convert to dataframe
     data = []
 
     for day in DAYS:
