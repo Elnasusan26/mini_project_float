@@ -28,12 +28,15 @@ body {
 .container {
   display: flex;
   min-height: 100vh;
+  width: 100%;
+  min-height: 100vh;
   align-items: stretch;
 }
 
 /* ── LEFT PANEL ── */
 .left {
-  width: 48%;
+  flex: 1;
+  min-width: 0;
   background: linear-gradient(145deg, var(--navy) 0%, #1a5f6e 60%, var(--teal) 100%);
   color: #fff;
   display: flex;
@@ -152,7 +155,8 @@ body {
 
 /* ── RIGHT PANEL ── */
 .right {
-  width: 52%;
+  flex: 1;
+  min-width: 0;
   background: var(--white);
   display: flex;
   align-items: center;
@@ -163,7 +167,8 @@ body {
 
 .right-inner {
   width: 100%;
-  max-width: 560px;
+  max-width: 420px;
+  margin: auto;
 }
 
 .right-header {
@@ -280,6 +285,7 @@ form label {
 /* ── SUBMIT BUTTON ── */
 .login-btn {
   width: 100%;
+  max-width: 100%;
   padding: 16px;
   background: var(--navy);
   color: white;
@@ -330,10 +336,8 @@ input::-ms-clear { display: none; }
   }
 
   .left {
-    width: 100%;
-    padding: 40px 28px;
-    min-height: auto;
-  }
+  display: none;
+}
 
   /* Hide heavy content on mobile to keep it clean */
   .left h1 { font-size: 26px; margin-bottom: 12px; }
@@ -350,7 +354,9 @@ input::-ms-clear { display: none; }
   }
 
   .right-inner { max-width: 100%; }
-  .right h2 { font-size: 36px; }
+  .right h2 {
+  font-size: 28px;
+}
 }
 
 /* Small mobile */
