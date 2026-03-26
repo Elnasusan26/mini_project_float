@@ -1,22 +1,210 @@
 {% extends "admin_base.html" %}
 {% block content %}
 
-<h2>Faculty List</h2>
+<style>
+.page-header { margin-bottom: 28px; }
+.page-header h2 {
+  font-size: 28px; font-weight: 700;
+  color: var(--navy); margin-bottom: 4px;
+}
+.page-header p { font-size: 14px; color: var(--muted); }
 
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;">
+.toolbar {
+  display: flex; gap: 12px; align-items: center;
+  flex-wrap: wrap; margin-bottom: 24px;
+}
 
-{% for t in teachers %}
-<div style="padding:20px;border:1px solid #ddd;border-radius:10px;background:#fff;">
+.search-wrap {
+  position: relative; flex: 1; min-width: 200px;
+}
+.search-wrap input {
+  width: 100%; padding: 10px 14px 10px 38px;
+  border: 1px solid var(--border); border-radius: 10px;
+  font-size: 14px; font-family: inherit;
+  background: var(--white); color: var(--text);
+  transition: var(--transition);
+  outline: none;
+}
+.search-wrap input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(26,127,127,0.1); }
+.search-icon {
+  position: absolute; left: 12px; top: 50%;
+  transform: translateY(-50%); font-size: 15px;
+  pointer-events: none;
+}
 
-    <h3>{{ t.name }}</h3>
+.filter-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter-btn {
+  padding: 8px 16px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--white); color: var(--muted);
+  font-size: 13px; font-weight: 500;
+  font-family: inherit; cursor: pointer;
+  transition: var(--transition);
+}
+.filter-btn:hover { border-color: var(--teal); color: var(--teal); }
+.filter-btn.active {
+  background: var(--teal); color: #fff;
+  border-color: var(--teal); font-weight: 600;
+}
 
-    <a href="{{ url_for('faculty_timetable', teacher_id=t.id) }}">
-        View Timetable
+.faculty-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.faculty-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 14px;
+  transition: var(--transition);
+  cursor: pointer;
+  text-decoration: none;
+}
+.faculty-card:hover {
+  border-color: var(--teal);
+  box-shadow: 0 6px 20px rgba(26,127,127,0.12);
+  transform: translateY(-2px);
+}
+
+.card-top { display: flex; align-items: center; gap: 14px; }
+
+.avatar {
+  width: 46px; height: 46px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--teal), #0d6b6b);
+  color: #fff; font-size: 18px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(26,127,127,0.25);
+}
+
+.card-info { flex: 1; min-width: 0; }
+.teacher-name {
+  font-size: 15px; font-weight: 700;
+  color: var(--navy); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+
+.dept-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
+.dept-tag {
+  font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 20px;
+  background: var(--teal-lt); color: var(--teal);
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+.dept-tag.no-dept {
+  background: var(--bg); color: var(--muted);
+}
+
+.view-link {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 9px;
+  border-radius: 9px; border: 1px solid var(--border);
+  font-size: 13px; font-weight: 600;
+  color: var(--teal); background: var(--teal-lt);
+  transition: var(--transition);
+}
+.faculty-card:hover .view-link {
+  background: var(--teal); color: #fff; border-color: var(--teal);
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center; padding: 60px 20px;
+  color: var(--muted);
+}
+.empty-state .emoji { font-size: 40px; margin-bottom: 12px; }
+.empty-state p { font-size: 15px; }
+</style>
+
+<div class="page-header">
+  <h2>Faculty</h2>
+  <p>{{ teachers | length }} teacher{{ 's' if teachers | length != 1 }} in the system</p>
+</div>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search faculty..." oninput="applyFilters()">
+  </div>
+
+  <div class="filter-group" id="filterGroup">
+    <button class="filter-btn active" data-dept="ALL" onclick="setFilter(this)">All</button>
+    {% set all_depts = [] %}
+    {% for t in teachers %}
+      {% for d in teacher_departments.get(t.id, []) %}
+        {% if d not in all_depts %}{% set _ = all_depts.append(d) %}{% endif %}
+      {% endfor %}
+    {% endfor %}
+    {% for dept in all_depts | sort %}
+      <button class="filter-btn" data-dept="{{ dept }}" onclick="setFilter(this)">{{ dept }}</button>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="faculty-grid" id="facultyGrid">
+  {% for t in teachers %}
+    {% set depts = teacher_departments.get(t.id, []) %}
+    <a class="faculty-card"
+       href="{{ url_for('faculty_timetable', teacher_id=t.id) }}"
+       data-name="{{ t.name | lower }}"
+       data-depts="{{ depts | join(',') | upper }}">
+
+      <div class="card-top">
+        <div class="avatar">{{ t.name[0] | upper }}</div>
+        <div class="card-info">
+          <div class="teacher-name">{{ t.name }}</div>
+          <div class="dept-tags">
+            {% if depts %}
+              {% for d in depts %}
+                <span class="dept-tag">{{ d }}</span>
+              {% endfor %}
+            {% else %}
+              <span class="dept-tag no-dept">Unassigned</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="view-link">View Timetable →</div>
     </a>
+  {% endfor %}
 
+  <div class="empty-state" id="emptyState" style="display:none;">
+    <div class="emoji">🔍</div>
+    <p>No faculty match your search.</p>
+  </div>
 </div>
-{% endfor %}
 
-</div>
+<script>
+  let activeDept = 'ALL';
+
+  function setFilter(btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeDept = btn.dataset.dept;
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const query = document.getElementById('searchInput').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.faculty-card');
+    let visible = 0;
+
+    cards.forEach(card => {
+      const name = card.dataset.name || '';
+      const depts = card.dataset.depts || '';
+      const matchSearch = !query || name.includes(query);
+      const matchDept = activeDept === 'ALL' || depts.split(',').includes(activeDept);
+      const show = matchSearch && matchDept;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    document.getElementById('emptyState').style.display = visible === 0 ? 'block' : 'none';
+  }
+</script>
 
 {% endblock %}

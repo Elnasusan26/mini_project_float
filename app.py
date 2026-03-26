@@ -300,12 +300,34 @@ def delete_cancelled(id):
 @login_required
 @role_required("admin")
 def faculty_list():
-
     teachers = Teacher.query.order_by(Teacher.name).all()
+
+    # derive departments from classes each teacher teaches
+    teacher_departments = {}
+    for t in teachers:
+        classes = (
+            db.session.query(Class.name)
+            .join(TimetableEntry, TimetableEntry.class_id == Class.id)
+            .filter(TimetableEntry.teacher_id == t.id)
+            .distinct()
+            .all()
+        )
+        depts = set()
+        for (cname,) in classes:
+            # e.g. "S8_CSE" -> "CSE", "S6_CSE_A" -> "CSE"
+            parts = cname.replace("-", "_").split("_")
+            if len(parts) >= 2:
+                last = parts[-1].upper()
+                # if last part is a section letter, take the one before it
+                dept = parts[-2].upper() if len(last) == 1 else last
+                if len(dept) > 1:
+                    depts.add(dept)
+        teacher_departments[t.id] = sorted(depts)
 
     return render_template(
         "admin_faculty_list.html",
-        teachers=teachers
+        teachers=teachers,
+        teacher_departments=teacher_departments
     )
 
 @app.route("/admin/faculty/<int:teacher_id>")
@@ -338,6 +360,7 @@ def faculty_timetable(teacher_id):
 
         cancelled_lookup.add((c.class_id, cancel_day, slot))
 
+    template = "admin_faculty_timetable.html" if session.get("role") == "admin" else "teacher_timetable.html"
     return render_template(
         "teacher_timetable.html",   
         entries=entries,
@@ -348,9 +371,12 @@ def faculty_timetable(teacher_id):
 
 @app.route("/view/timetable")
 @app.route("/view/floating_timetable")
+@app.route("/floating_timetable_grid")
 @login_required
 def view_floating_timetable():
 
+    role = session.get("role")
+    
     entries = TimetableEntry.query.order_by(
         TimetableEntry.class_id,
         TimetableEntry.day,
@@ -392,8 +418,10 @@ def view_floating_timetable():
 
     class_map = {c.name: c.id for c in Class.query.all()}
 
+    template = "floating_timetable_grid_teacher.html" if role == "teacher" else "floating_timetable_grid.html"
+
     return render_template(
-        "floating_timetable_grid.html",
+        template,
         timetable=raw,
         slots=TIME_SLOTS,
         days=DAYS,

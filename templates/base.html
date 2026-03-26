@@ -246,7 +246,8 @@ class="{% if request.endpoint == 'teacher_dashboard' %}active{% endif %}">
 Dashboard
 </a>
 
-<a href="{{ url_for('view_floating_timetable') }}">
+<a href="{{ url_for('view_floating_timetable') }}"
+class="{% if request.endpoint == 'view_floating_timetable' %}active{% endif %}">
 Browse Class Timetable
 </a>
 
@@ -257,7 +258,8 @@ class="{% if request.endpoint == 'student_dashboard' %}active{% endif %}">
 Dashboard
 </a>
 
-<a href="{{ url_for('view_floating_timetable') }}">
+<a href="{{ url_for('view_floating_timetable') }}"
+class="{% if request.endpoint == 'view_floating_timetable' %}active{% endif %}">
 Browse Class Timetable
 </a>
 
