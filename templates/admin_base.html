@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FloatED | {% block title %}{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -17,14 +20,19 @@
       --text:    #1e2d3d;
       --muted:   #6b7f90;
       --border:  #dde5ed;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+      --transition: all .2s cubic-bezier(.4,0,.2,1);
     }
 
     body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       display: flex;
       min-height: 100vh;
+      letter-spacing: -0.01em;
+      line-height: 1.6;
     }
 
     /* ── SIDEBAR ── */
@@ -35,17 +43,18 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 28px 16px;
+      padding: 24px 12px;
       position: fixed;
       top: 0; left: 0; bottom: 0;
       z-index: 100;
       transition: transform .25s ease;
+      box-shadow: var(--shadow-sm);
     }
 
     .sidebar-top {
-      padding: 0 8px 24px;
+      padding: 0 8px 20px;
       border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     .logo {
@@ -56,66 +65,94 @@
       font-weight: 700;
       color: var(--navy);
       margin-bottom: 4px;
+      letter-spacing: -0.03em;
     }
 
     .logo::before {
       content: '🎓';
-      width: 34px; height: 34px;
-      background: var(--teal);
-      border-radius: 9px;
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--teal), #0d6b6b);
+      border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
+      font-size: 17px;
+      box-shadow: 0 2px 8px rgba(26,127,127,0.3);
     }
 
     .subtitle {
-      font-size: 12px;
+      font-size: 11px;
+      font-weight: 500;
       color: var(--muted);
-      padding-left: 44px;
+      padding-left: 46px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     .sidebar-nav {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      margin-top: 8px;
+      gap: 2px;
+      margin-top: 4px;
     }
 
     .sidebar-nav a {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 11px 14px;
-      border-radius: 10px;
-      font-size: 14px;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      font-size: 13.5px;
       font-weight: 500;
       color: var(--muted);
       text-decoration: none;
-      transition: background .15s, color .15s;
+      transition: var(--transition);
+      position: relative;
     }
 
-    .sidebar-nav a:hover { background: var(--bg); color: var(--text); }
-    .sidebar-nav a.active { background: var(--teal-lt); color: var(--teal); font-weight: 600; }
+    .sidebar-nav a:hover {
+      background: var(--bg);
+      color: var(--text);
+      transform: translateX(2px);
+    }
+
+    .sidebar-nav a.active {
+      background: var(--teal-lt);
+      color: var(--teal);
+      font-weight: 600;
+    }
+
+    .sidebar-nav a.active::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 20%; bottom: 20%;
+      width: 3px;
+      background: var(--teal);
+      border-radius: 0 3px 3px 0;
+    }
 
     .sidebar-bottom {
       border-top: 1px solid var(--border);
-      padding-top: 16px;
+      padding-top: 12px;
     }
 
     .sidebar-bottom a {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 11px 14px;
-      border-radius: 10px;
-      font-size: 14px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      font-size: 13.5px;
       font-weight: 500;
       color: var(--muted);
       text-decoration: none;
-      transition: background .15s, color .15s;
+      transition: var(--transition);
     }
 
-    .sidebar-bottom a:hover { background: #fff0f0; color: #c0392b; }
+    .sidebar-bottom a:hover {
+      background: #fff0f0;
+      color: #c0392b;
+      transform: translateX(2px);
+    }
 
     /* ── LAYOUT ── */
     .layout { display: flex; width: 100%; }
@@ -123,7 +160,7 @@
     .main-content {
       margin-left: 240px;
       flex: 1;
-      padding: 36px;
+      padding: 40px;
       min-height: 100vh;
     }
 
@@ -142,9 +179,10 @@
     }
 
     .topbar-logo {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 700;
       color: var(--navy);
+      letter-spacing: -0.02em;
     }
 
     .hamburger {
@@ -159,14 +197,12 @@
 
     .hamburger span {
       display: block;
-      width: 24px;
-      height: 2px;
+      width: 24px; height: 2px;
       background: var(--navy);
       border-radius: 2px;
       transition: all .25s;
     }
 
-    /* Overlay when sidebar open on mobile */
     .sidebar-overlay {
       display: none;
       position: fixed;
@@ -186,62 +222,80 @@
       align-items: center;
       justify-content: center;
       z-index: 999;
+      animation: fadeIn .2s ease;
     }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     .flash-popup {
       background: var(--white);
-      border-radius: 14px;
-      padding: 28px 32px;
+      border-radius: 16px;
+      padding: 32px 36px;
       text-align: center;
       max-width: 360px;
       width: 90%;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+      animation: slideUp .25s ease;
     }
 
-    .flash-popup p { font-size: 15px; color: var(--text); margin-bottom: 18px; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .flash-popup p {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
 
     .flash-popup button {
       padding: 10px 28px;
       background: var(--teal);
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 9px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
+      transition: var(--transition);
+      font-family: inherit;
+    }
+
+    .flash-popup button:hover {
+      background: #0d6b6b;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(26,127,127,0.3);
     }
 
     .flash-popup.success { border-top: 4px solid var(--teal); }
     .flash-popup.error   { border-top: 4px solid #c0392b; }
 
-    /* ── RESPONSIVE ── */
+    /* ── PAGE TRANSITION ── */
+    .main-content {
+      animation: pageFadeIn .3s ease;
+    }
 
-    /* Tablet */
+    @keyframes pageFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ── */
     @media (max-width: 1024px) {
       .sidebar { width: 200px; }
-      .main-content { margin-left: 200px; padding: 24px; }
+      .main-content { margin-left: 200px; padding: 28px; }
     }
 
-    /* Mobile */
     @media (max-width: 768px) {
       .topbar { display: flex; }
-
-      .sidebar {
-        transform: translateX(-100%);
-        width: 260px;
-        top: 0;
-      }
-
+      .sidebar { transform: translateX(-100%); width: 260px; top: 0; }
       .sidebar.open { transform: translateX(0); }
-
-      .main-content {
-        margin-left: 0;
-        padding: 80px 16px 24px;
-        width: 100%;
-      }
+      .main-content { margin-left: 0; padding: 80px 16px 24px; width: 100%; }
     }
 
-    /* Small mobile */
     @media (max-width: 480px) {
       .main-content { padding: 72px 12px 20px; }
     }
@@ -263,23 +317,18 @@
   {% endif %}
 {% endwith %}
 
-<!-- Mobile topbar -->
 <div class="topbar">
   <span class="topbar-logo">🎓 FloatED</span>
   <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
-    <span></span>
-    <span></span>
-    <span></span>
+    <span></span><span></span><span></span>
   </button>
 </div>
 
-<!-- Overlay -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
 <div class="layout">
 
   <aside class="sidebar" id="sidebar">
-
     <div>
       <div class="sidebar-top">
         <h2 class="logo">FloatED</h2>
@@ -308,7 +357,6 @@
     <div class="sidebar-bottom">
       <a href="/logout">Logout</a>
     </div>
-
   </aside>
 
   <main class="main-content">
@@ -330,7 +378,6 @@
     overlay.classList.toggle('active');
   }
 
-  // Close sidebar when a nav link is clicked on mobile
   document.querySelectorAll('.sidebar-nav a, .sidebar-bottom a').forEach(link => {
     link.addEventListener('click', () => {
       if (window.innerWidth <= 768) {
