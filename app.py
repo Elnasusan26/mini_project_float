@@ -324,7 +324,6 @@ def faculty_timetable(teacher_id):
         .all()
     )
 
-    # CANCELLED LOOKUP (same as others)
     today = datetime.today().date()
 
     cancelled = CancelledClass.query.filter(
@@ -340,10 +339,10 @@ def faculty_timetable(teacher_id):
         cancelled_lookup.add((c.class_id, cancel_day, slot))
 
     return render_template(
-        "teacher_timetable.html",   # reuse same template
+        "teacher_timetable.html",   
         entries=entries,
         cancelled_lookup=cancelled_lookup,
-        teacher_name=teacher.name   # optional
+        teacher_name=teacher.name   
     )
 
 
@@ -514,7 +513,6 @@ def export_class_timetable(class_id):
     center = Alignment(horizontal="center", vertical="center", wrap_text=True)
     bold = Font(bold=True)
 
-    # HEADER
     ws.merge_cells("A1:G1")
     ws["A1"] = "AISAT/Form/QPM18/F3"
     ws["A1"].alignment = center
@@ -580,12 +578,10 @@ def export_class_timetable(class_id):
 
         ws.append(row)
 
-    # styling
     for row in ws.iter_rows():
         for cell in row:
             cell.alignment = center
 
-    # return file
     file_stream = io.BytesIO()
     wb.save(file_stream)
     file_stream.seek(0)

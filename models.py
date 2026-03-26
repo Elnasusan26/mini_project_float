@@ -4,8 +4,6 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
-
-# ---------------- USER (AUTH) ----------------
 class User(db.Model):
     __tablename__ = "user"
 
@@ -13,7 +11,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
 
-    role = db.Column(db.String(20), nullable=False)  # admin / teacher / student
+    role = db.Column(db.String(20), nullable=False)  
 
     teacher_id = db.Column(db.Integer, db.ForeignKey("teacher.id"), nullable=True)
     class_id = db.Column(db.Integer, db.ForeignKey("class.id"), nullable=True)
@@ -21,8 +19,6 @@ class User(db.Model):
     teacher = db.relationship("Teacher", backref="user", uselist=False)
     class_obj = db.relationship("Class", backref="students")
 
-
-    # password helpers
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
@@ -33,7 +29,7 @@ class User(db.Model):
         return f"<User {self.email} ({self.role})>"
 
 
-# ---------------- CLASS ----------------
+
 class Class(db.Model):
     __tablename__ = "class"
 
@@ -45,8 +41,6 @@ class Class(db.Model):
     def __repr__(self):
         return f"<Class {self.name}>"
 
-
-# ---------------- ROOM ----------------
 class Room(db.Model):
     __tablename__ = "room"
 
@@ -63,8 +57,6 @@ class Room(db.Model):
     def __repr__(self):
         return f"<Room {self.name}>"
 
-
-# ---------------- TEACHER ----------------
 class Teacher(db.Model):
     __tablename__ = "teacher"
 
@@ -75,7 +67,6 @@ class Teacher(db.Model):
         return f"<Teacher {self.name}>"
 
 
-# ---------------- SUBJECT ----------------
 class Subject(db.Model):
     __tablename__ = "subject"
 
@@ -99,8 +90,6 @@ class TeachingAssignment(db.Model):
     subject_id = db.Column(db.Integer, db.ForeignKey("subject.id"))
     class_id = db.Column(db.Integer, db.ForeignKey("class.id"))
 
-
-# ---------------- TIMETABLE ENTRY ----------------
 class TimetableEntry(db.Model):
     __tablename__ = "timetable_entry"
 
@@ -111,7 +100,6 @@ class TimetableEntry(db.Model):
     teacher_id = db.Column(db.Integer, db.ForeignKey("teacher.id"))
     room_id = db.Column(db.Integer, db.ForeignKey("room.id"))
 
-    # ⭐ LAB ROOM SUPPORT
     lab_rooms = db.Column(db.String(200))
 
     day = db.Column(db.String(20))
@@ -122,7 +110,7 @@ class TimetableEntry(db.Model):
     is_lab_hour = db.Column(db.Boolean, default=False)
     is_floating = db.Column(db.Boolean, default=False)
 
-    # ⭐ RELATIONSHIPS (IMPORTANT)
+  
     class_obj = db.relationship("Class", backref="timetable_entries")
     subject = db.relationship("Subject")
     teacher = db.relationship("Teacher")
@@ -131,8 +119,6 @@ class TimetableEntry(db.Model):
     def __repr__(self):
         return f"<TimetableEntry {self.class_id} {self.day} {self.slot}>"
 
-
-# ---------------- CANCELLED CLASS ----------------
 class CancelledClass(db.Model):
 
     __tablename__ = "cancelled_class"
