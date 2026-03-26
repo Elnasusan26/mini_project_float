@@ -11,17 +11,12 @@ import pandas as pd
 
 from models import (
     db, User, Class, Room, Subject,
-    TimetableEntry, CancelledClass, Notification, TeachingAssignment
+    TimetableEntry, CancelledClass, TeachingAssignment
 )
 
 from input_processor import process_inputs, process_lab_rooms
 from allocator import allocate_rooms
 from utils.normalize import normalize_slot
-
-
-# ==============================================================
-# APP INIT
-# ==============================================================
 
 app = Flask(__name__)
 app.secret_key = "floated-secret"
@@ -34,11 +29,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 db.init_app(app)
-
-
-# ==============================================================
-# CONSTANTS
-# ==============================================================
 
 TIME_SLOTS = list(map(normalize_slot, [
     "8.00-8.45",
@@ -53,11 +43,6 @@ DAYS = [
     "MONDAY", "TUESDAY", "WEDNESDAY",
     "THURSDAY", "FRIDAY", "SATURDAY"
 ]
-
-
-# ==============================================================
-# AUTH HELPERS
-# ==============================================================
 
 def login_required(f):
     @wraps(f)
@@ -78,35 +63,6 @@ def role_required(role):
         return wrapper
     return decorator
 
-
-# ==============================================================
-# NOTIFICATION CONTEXT (for bell)
-# ==============================================================
-
-@app.context_processor
-def inject_notifications():
-
-    if "user_id" not in session:
-        return dict(notifications=[], unread_count=0)
-
-    notifications = Notification.query.filter_by(
-        user_id=session["user_id"]
-    ).order_by(Notification.created_at.desc()).limit(5).all()
-
-    unread_count = Notification.query.filter_by(
-        user_id=session["user_id"],
-        is_read=False
-    ).count()
-
-    return dict(
-        notifications=notifications,
-        unread_count=unread_count
-    )
-
-
-# ==============================================================
-# LOGIN
-# ==============================================================
 
 @app.route("/", methods=["GET", "POST"])
 def login():
@@ -138,10 +94,6 @@ def login():
     return render_template("login.html")
 
 
-# ==============================================================
-# ADMIN DASHBOARD
-# ==============================================================
-
 @app.route("/admin")
 @login_required
 @role_required("admin")
@@ -155,6 +107,7 @@ def admin_dashboard():
         class_category="floating"
     ).count()
 
+   
     from sqlalchemy import func, case
 
     subquery = (
@@ -202,10 +155,6 @@ def admin_dashboard():
     )
 
 
-# ==============================================================
-# ADMIN UPLOAD
-# ==============================================================
-
 @app.route("/admin_upload", methods=["GET", "POST"])
 @login_required
 @role_required("admin")
@@ -241,10 +190,6 @@ def admin_upload():
 
     return render_template("admin_upload.html")
 
-
-# ==============================================================
-# CANCEL CLASS
-# ==============================================================
 
 @app.route("/admin/cancel_class", methods=["GET", "POST"])
 @login_required
@@ -285,22 +230,6 @@ def cancel_class():
             )
 
             db.session.add(cancelled)
-
-            message = f"{cls.name} class cancelled on {date} ({slot})"
-
-            students = User.query.filter_by(
-                class_id=class_id,
-                role="student"
-            ).all()
-
-            for s in students:
-                db.session.add(Notification(user_id=s.id, message=message))
-
-            teachers = User.query.filter_by(role="teacher").all()
-
-            for t in teachers:
-                db.session.add(Notification(user_id=t.id, message=message))
-
         db.session.commit()
 
         allocate_rooms()
@@ -313,11 +242,6 @@ def cancel_class():
         "admin_cancel_class.html",
         classes=classes
     )
-
-
-# ==============================================================
-# VIEW CANCELLED CLASSES
-# ==============================================================
 
 @app.route("/admin/cancelled_classes")
 @login_required
@@ -333,10 +257,6 @@ def cancelled_classes():
         cancelled=cancelled
     )
 
-
-# ==============================================================
-# DELETE CANCELLED CLASS
-# ==============================================================
 
 @app.route("/admin/delete_cancelled/<int:id>", endpoint="delete_cancelled")
 @login_required
@@ -374,10 +294,6 @@ def delete_cancelled(id):
 
     return redirect(url_for("cancelled_classes"))
 
-
-# ==============================================================
-# VIEW FLOATING TIMETABLE
-# ==============================================================
 
 @app.route("/view/timetable")
 @app.route("/view/floating_timetable")
@@ -425,26 +341,14 @@ def view_floating_timetable():
 
     class_map = {c.name: c.id for c in Class.query.all()}
 
-    role = session.get('role')
-
-    if role == 'teacher' or role == 'student':
-        template = 'floating_timetable_grid_teacher.html'
-    else:
-        template = 'floating_timetable_grid.html'
-
     return render_template(
-        template,
+        "floating_timetable_grid.html",
         timetable=raw,
         slots=TIME_SLOTS,
         days=DAYS,
         cancelled_lookup=cancelled_lookup,
         class_map=class_map
     )
-
-
-# ==============================================================
-# TEACHER DASHBOARD
-# ==============================================================
 
 @app.route("/teacher")
 @login_required
@@ -467,6 +371,10 @@ def teacher_dashboard():
         .all()
     )
 
+    for e in entries:
+        print(e.subject.name if e.subject else None,
+              e.class_obj.name if e.class_obj else None)
+
     today = datetime.today().date()
 
     cancelled = CancelledClass.query.filter(
@@ -485,11 +393,6 @@ def teacher_dashboard():
         entries=entries,
         cancelled_lookup=cancelled_lookup
     )
-
-
-# ==============================================================
-# STUDENT DASHBOARD
-# ==============================================================
 
 @app.route("/student")
 @login_required
@@ -527,11 +430,6 @@ def student_dashboard():
         cancelled_lookup=cancelled_lookup
     )
 
-
-# ==============================================================
-# LOGOUT
-# ==============================================================
-
 @app.route("/logout")
 def logout():
     session.clear()
@@ -562,13 +460,11 @@ def export_class_timetable(class_id):
     entries = TimetableEntry.query.filter_by(class_id=class_id)\
         .order_by(TimetableEntry.day, TimetableEntry.slot)\
         .all()
-
     grid = {day: {slot: "-" for slot in TIME_SLOTS} for day in DAYS}
 
     for e in entries:
 
         subject = e.subject.name if e.subject else "-"
-
         if e.lab_rooms:
             value = f"{subject} ({e.lab_rooms})"
         else:
@@ -576,7 +472,6 @@ def export_class_timetable(class_id):
             value = f"{subject} ({room})"
 
         grid[e.day][normalize_slot(e.slot)] = value
-
     data = []
 
     for day in DAYS:
@@ -599,12 +494,6 @@ def export_class_timetable(class_id):
         download_name=f"{cls.name}_timetable.xlsx",
         as_attachment=True
     )
-
-
-# ==============================================================
-# MAIN
-# ==============================================================
-
 if __name__ == "__main__":
 
     with app.app_context():
