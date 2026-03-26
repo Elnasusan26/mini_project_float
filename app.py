@@ -95,7 +95,27 @@ def login():
         flash("Invalid email or password", "error")
 
     return render_template("login.html")
+def get_cancelled_lookup(include_class_name=False):
+    today = datetime.today().date()
 
+    cancelled = CancelledClass.query.filter(
+        CancelledClass.date >= today
+    ).all()
+
+    cancelled_lookup = set()
+
+    for c in cancelled:
+        cancel_day = c.date.strftime("%A").upper()
+        slot = normalize_slot(c.slot)
+
+        if include_class_name:
+            cls = Class.query.get(c.class_id)
+            if cls:
+                cancelled_lookup.add((cls.name, cancel_day, slot))
+        else:
+            cancelled_lookup.add((c.class_id, cancel_day, slot))
+
+    return cancelled_lookup
 
 @app.route("/admin")
 @login_required
@@ -398,24 +418,7 @@ def view_floating_timetable():
             "batch": e.batch
         })
 
-    today = datetime.today().date()
-
-    cancelled = CancelledClass.query.filter(
-        CancelledClass.date >= today
-    ).all()
-
-    cancelled_lookup = set()
-
-    for c in cancelled:
-
-        cancel_day = c.date.strftime("%A").upper()
-        slot = normalize_slot(c.slot)
-
-        cls = Class.query.get(c.class_id)
-
-        if cls:
-            cancelled_lookup.add((cls.name, cancel_day, slot))
-
+    cancelled_lookup = get_cancelled_lookup(include_class_name=True)
     class_map = {c.name: c.id for c in Class.query.all()}
 
     template = "floating_timetable_grid_teacher.html" if role == "teacher" else "floating_timetable_grid.html"
@@ -454,18 +457,7 @@ def teacher_dashboard():
         print(e.subject.name if e.subject else None,
               e.class_obj.name if e.class_obj else None)
 
-    today = datetime.today().date()
-
-    cancelled = CancelledClass.query.filter(
-        CancelledClass.date >= today
-    ).all()
-
-    cancelled_lookup = set()
-
-    for c in cancelled:
-        cancel_day = c.date.strftime("%A").upper()
-        slot = normalize_slot(c.slot)
-        cancelled_lookup.add((c.class_id, cancel_day, slot))
+    cancelled_lookup = get_cancelled_lookup()
 
     return render_template(
         "teacher_timetable.html",
@@ -486,21 +478,11 @@ def student_dashboard():
         class_id=user.class_id
     ).all()
 
-    today = datetime.today().date()
-
-    cancelled = CancelledClass.query.filter(
-        CancelledClass.date >= today,
-        CancelledClass.class_id == user.class_id
-    ).all()
-
-    cancelled_lookup = set()
-
-    for c in cancelled:
-
-        cancel_day = c.date.strftime("%A").upper()
-        slot = normalize_slot(c.slot)
-
-        cancelled_lookup.add((cancel_day, slot))
+    cancelled_lookup = {
+    (c_day, slot)
+    for (cid, c_day, slot) in get_cancelled_lookup()
+    if cid == user.class_id
+}
 
     return render_template(
         "student_timetable.html",
