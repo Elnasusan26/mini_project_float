@@ -342,10 +342,12 @@
         <a href="/admin_upload" {% if request.path == '/admin_upload' %}class="active"{% endif %}>
           Upload Timetable
         </a>
-        <a href="/view/timetable" {% if request.path == '/view/timetable' %}class="active"{% endif %}>
-          View Timetable
-        </a>
-        <a href="{{ url_for('faculty_list') }}">Faculty</a>
+        <a href="/view/timetable" {% if request.path in ['/view/timetable', '/view/floating_timetable', '/floating_timetable_grid'] %}class="active"{% endif %}>
+  View Timetable
+</a>
+<a href="{{ url_for('faculty_list') }}" {% if request.path.startswith('/admin/faculty') %}class="active"{% endif %}>
+  Faculty
+</a>
         <a href="/admin/cancel_class" {% if request.path == '/admin/cancel_class' %}class="active"{% endif %}>
           Cancel Class
         </a>

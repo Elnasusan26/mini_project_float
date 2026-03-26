@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Teacher Timetable{% endblock %}
+{% block title %}Timetable{% endblock %}
 
 {% block content %}
 
@@ -187,35 +187,7 @@ tbody td {
   font-weight: 700;
 }
 
-/* ── LEGEND ── */
-.legend {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 14px 24px;
-  border-top: 1px solid var(--border);
-  background: var(--bg);
-  font-size: 13px;
-  color: var(--muted);
-  flex-wrap: wrap;
-  border-radius: 0 0 18px 18px;
-}
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.legend-box {
-  width: 14px; height: 14px;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
-.legend-box.theory    { background: #e8f8e8; border: 1px solid #aaddaa; }
-.legend-box.lab       { background: #dde8f8; border: 1px solid #aabbdd; }
-.legend-box.cancelled { background: #ffe6e6; border: 1px solid #ffaaaa; }
 
 @media (max-width: 768px) {
   .now-next-row { flex-direction: column; }
@@ -223,14 +195,16 @@ tbody td {
 </style>
 
 <div class="page-header">
-  <h2>Teacher Timetable</h2>
+  <h2>Timetable</h2>
   <p>Your weekly class schedule</p>
 </div>
 
 <!-- Now / Next Widget -->
 <div class="now-next-row" id="nowNextRow">
   <div class="now-next-card now-card">
-    <div class="now-next-icon">📍</div>
+    <div class="now-next-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#17a589" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="#17a589"/>
+</svg></div>
     <div class="now-next-info">
       <div class="now-next-label">Now</div>
       <div class="now-next-subject" id="nowSubject">—</div>
@@ -242,7 +216,9 @@ tbody td {
   </div>
 
   <div class="now-next-card next-card">
-    <div class="now-next-icon">⏭</div>
+    <div class="now-next-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#17a589" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+  <polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/>
+</svg></div>
     <div class="now-next-info">
       <div class="now-next-label">Up Next</div>
       <div class="now-next-subject" id="nextSubject">—</div>
@@ -279,7 +255,7 @@ tbody td {
   <table>
     <thead>
       <tr>
-        <th>Day</th>
+        <th style="background-color: #1b3a4b; color: #fff; font-weight: 600;">Day</th>
         {% for slot in slots %}
           <th>{{ slot | replace('_-_', ' – ') }}</th>
         {% endfor %}
@@ -316,19 +292,6 @@ tbody td {
       {% endfor %}
     </tbody>
   </table>
-
-  <!-- Legend -->
-  <div class="legend">
-    <div class="legend-item">
-      <div class="legend-box theory"></div> Theory
-    </div>
-    <div class="legend-item">
-      <div class="legend-box lab"></div> Lab
-    </div>
-    <div class="legend-item">
-      <div class="legend-box cancelled"></div> Cancelled
-    </div>
-  </div>
 
 </div>
 
