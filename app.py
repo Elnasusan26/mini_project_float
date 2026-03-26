@@ -2,7 +2,10 @@ from flask import (
     Flask, render_template, request,
     redirect, url_for, flash, session, abort, send_file
 )
+import io
 import os
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font
 from collections import defaultdict
 from functools import wraps
 from datetime import datetime
@@ -11,7 +14,7 @@ import pandas as pd
 
 from models import (
     db, User, Class, Room, Subject,
-    TimetableEntry, CancelledClass, TeachingAssignment
+    TimetableEntry, CancelledClass, TeachingAssignment,Teacher
 )
 
 from input_processor import process_inputs, process_lab_rooms
@@ -293,6 +296,55 @@ def delete_cancelled(id):
     allocate_rooms()
 
     return redirect(url_for("cancelled_classes"))
+@app.route("/admin/faculty")
+@login_required
+@role_required("admin")
+def faculty_list():
+
+    teachers = Teacher.query.order_by(Teacher.name).all()
+
+    return render_template(
+        "admin_faculty_list.html",
+        teachers=teachers
+    )
+
+@app.route("/admin/faculty/<int:teacher_id>")
+@login_required
+@role_required("admin")
+def faculty_timetable(teacher_id):
+
+    teacher = Teacher.query.get_or_404(teacher_id)
+
+    entries = (
+        TimetableEntry.query
+        .join(Subject)
+        .join(Class)
+        .filter(TimetableEntry.teacher_id == teacher.id)
+        .order_by(TimetableEntry.day, TimetableEntry.slot)
+        .all()
+    )
+
+    # CANCELLED LOOKUP (same as others)
+    today = datetime.today().date()
+
+    cancelled = CancelledClass.query.filter(
+        CancelledClass.date >= today
+    ).all()
+
+    cancelled_lookup = set()
+
+    for c in cancelled:
+        cancel_day = c.date.strftime("%A").upper()
+        slot = normalize_slot(c.slot)
+
+        cancelled_lookup.add((c.class_id, cancel_day, slot))
+
+    return render_template(
+        "teacher_timetable.html",   # reuse same template
+        entries=entries,
+        cancelled_lookup=cancelled_lookup,
+        teacher_name=teacher.name   # optional
+    )
 
 
 @app.route("/view/timetable")
@@ -449,50 +501,100 @@ def class_timetable(class_id):
         entries=entries,
         class_id=class_id
     )
-
-
-@app.route('/export/class/<int:class_id>')
+@app.route("/export_class_timetable/<int:class_id>")
 @login_required
 def export_class_timetable(class_id):
 
-    cls = Class.query.get(class_id)
+    cls = Class.query.get_or_404(class_id)
 
-    entries = TimetableEntry.query.filter_by(class_id=class_id)\
-        .order_by(TimetableEntry.day, TimetableEntry.slot)\
-        .all()
-    grid = {day: {slot: "-" for slot in TIME_SLOTS} for day in DAYS}
+    wb = Workbook()
+    ws = wb.active
+    ws.title = cls.name
+
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    bold = Font(bold=True)
+
+    # HEADER
+    ws.merge_cells("A1:G1")
+    ws["A1"] = "AISAT/Form/QPM18/F3"
+    ws["A1"].alignment = center
+    ws["A1"].font = bold
+
+    ws.merge_cells("A2:G2")
+    ws["A2"] = "Regular Class Timetable"
+    ws["A2"].alignment = center
+    ws["A2"].font = bold
+
+    ws.merge_cells("A3:G3")
+    ws["A3"] = f"Class: {cls.name}"
+    ws["A3"].alignment = center
+
+    ws.append([])
+
+    headers = [
+        "Day",
+        "8.00 - 8.45",
+        "9.10 - 9.55",
+        "10.00 - 10.45",
+        "10.50 - 11.35",
+        "11.55 - 12.40",
+        "12.45 - 1.30"
+    ]
+
+    ws.append(headers)
+
+    entries = TimetableEntry.query.filter_by(class_id=class_id).all()
+
+    data = {}
 
     for e in entries:
+        data.setdefault(e.day, {})
+        data[e.day].setdefault(e.slot, [])
 
         subject = e.subject.name if e.subject else "-"
-        if e.lab_rooms:
-            value = f"{subject} ({e.lab_rooms})"
-        else:
-            room = e.room.name if e.room else "-"
-            value = f"{subject} ({room})"
+        teacher = f"[{e.teacher.name}]" if e.teacher else ""
 
-        grid[e.day][normalize_slot(e.slot)] = value
-    data = []
+        if e.lab_rooms:
+            room = f"({e.lab_rooms})"
+        elif e.room:
+            room = f"({e.room.name})"
+        else:
+            room = ""
+
+        text = f"{subject}\n{teacher}\n{room}"
+
+        data[e.day][e.slot].append(text)
 
     for day in DAYS:
-        row = {"Day / Time": day}
+
+        row = [day]
+
         for slot in TIME_SLOTS:
-            row[slot] = grid[day][slot]
-        data.append(row)
 
-    df = pd.DataFrame(data)
+            cell = data.get(day, {}).get(slot, [])
 
-    output = BytesIO()
+            if cell:
+                row.append("\n".join(cell))
+            else:
+                row.append("")
 
-    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="Timetable")
+        ws.append(row)
 
-    output.seek(0)
+    # styling
+    for row in ws.iter_rows():
+        for cell in row:
+            cell.alignment = center
+
+    # return file
+    file_stream = io.BytesIO()
+    wb.save(file_stream)
+    file_stream.seek(0)
 
     return send_file(
-        output,
+        file_stream,
+        as_attachment=True,
         download_name=f"{cls.name}_timetable.xlsx",
-        as_attachment=True
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 if __name__ == "__main__":
 

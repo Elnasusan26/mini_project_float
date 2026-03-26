@@ -68,7 +68,7 @@ def allocate_rooms():
 
         cls = Class.query.get(entry.class_id)
 
-        for room in available_rooms
+        for room in available_rooms:
             
             if room.capacity < cls.strength:
                 continue

@@ -1,0 +1,22 @@
+{% extends "admin_base.html" %}
+{% block content %}
+
+<h2>Faculty List</h2>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;">
+
+{% for t in teachers %}
+<div style="padding:20px;border:1px solid #ddd;border-radius:10px;background:#fff;">
+
+    <h3>{{ t.name }}</h3>
+
+    <a href="{{ url_for('faculty_timetable', teacher_id=t.id) }}">
+        View Timetable
+    </a>
+
+</div>
+{% endfor %}
+
+</div>
+
+{% endblock %}
