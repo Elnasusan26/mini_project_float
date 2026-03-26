@@ -2,11 +2,6 @@ import pandas as pd
 from models import db, Class, Room, Teacher, Subject, TimetableEntry, User,TeachingAssignment
 from utils.normalize import normalize_slot, normalize_subject
 
-
-
-# -------------------------------------------------
-# HELPERS
-# -------------------------------------------------
 def normalize(df):
     df.columns = (
         df.columns.astype(str)
@@ -30,10 +25,6 @@ def get_slot_column(df):
             return c
     raise ValueError(f"No slot column found. Columns: {list(df.columns)}")
 
-
-# -------------------------------------------------
-# PARALLEL CLEANUP HELPER
-# -------------------------------------------------
 def delete_base_entry(class_id, day, slot):
 
     base_entries = TimetableEntry.query.filter(
@@ -48,14 +39,10 @@ def delete_base_entry(class_id, day, slot):
         db.session.delete(e)
 
 
-# -------------------------------------------------
-# MAIN PROCESS
-# -------------------------------------------------
 def process_inputs():
 
     print("\n========== INPUT PROCESSOR START ==========\n")
 
-    # RESET ACADEMIC TABLES
     TimetableEntry.query.delete()
     TeachingAssignment.query.delete() 
     Subject.query.delete()
@@ -64,9 +51,6 @@ def process_inputs():
     Class.query.delete()
     db.session.commit()
 
-    # -------------------------------------------------
-    # 1️⃣ CLASSES
-    # -------------------------------------------------
     df = normalize(pd.read_excel("uploads/class_strength.xlsx"))
     class_col = get_class_column(df)
 
@@ -85,10 +69,6 @@ def process_inputs():
 
         class_map[cls.name] = cls
 
-
-    # -------------------------------------------------
-    # 2️⃣ ROOMS
-    # -------------------------------------------------
     df = normalize(pd.read_excel("uploads/room_mapping.xlsx"))
     class_col = get_class_column(df)
 
@@ -96,15 +76,11 @@ def process_inputs():
 
         class_name = str(r[class_col]).strip()
 
-        # Get class if exists
         cls = class_map.get(class_name)
 
         room_name = str(r["room"]).strip()
         capacity = int(r["capacity"])
 
-        # -------------------------------------------------
-        # Permanent room (belongs to a class)
-        # -------------------------------------------------
         if cls:
 
             db.session.add(Room(
@@ -114,9 +90,6 @@ def process_inputs():
                 owner_class_id=cls.id
             ))
 
-        # -------------------------------------------------
-        # Floating room (no class owner)
-        # -------------------------------------------------
         else:
 
             db.session.add(Room(
@@ -126,10 +99,6 @@ def process_inputs():
                 owner_class_id=None
             ))
 
-
-    # -------------------------------------------------
-    # 3️⃣ SUBJECT TYPES
-    # -------------------------------------------------
     df = normalize(pd.read_excel("uploads/class_type.xlsx"))
 
     subject_type = {
@@ -137,10 +106,6 @@ def process_inputs():
         for _, r in df.iterrows()
     }
 
-
-   # -------------------------------------------------
-    # 4️⃣ TEACHERS + SUBJECTS
-    # -------------------------------------------------
     df = pd.read_excel("uploads/teacher_subject_mapping.xlsx")
 
     df.columns = (
@@ -179,10 +144,6 @@ def process_inputs():
 
         if not cls:
             continue
-
-        # -----------------------------
-        # CREATE OR GET TEACHER
-        # -----------------------------
         teacher = teacher_map.get(faculty)
 
         if not teacher:
@@ -194,9 +155,6 @@ def process_inputs():
 
             teacher_map[faculty] = teacher
 
-            # -----------------------------
-            # AUTO CREATE TEACHER LOGIN
-            # -----------------------------
             email = faculty.lower().replace(" ", "") + "@college.edu"
 
             existing_user = User.query.filter_by(email=email).first()
@@ -213,9 +171,6 @@ def process_inputs():
 
                 db.session.add(teacher_user)
 
-        # -----------------------------
-        # CREATE OR GET SUBJECT
-        # -----------------------------
         subject = Subject.query.filter_by(name=subject_name).first()
 
         if not subject:
@@ -230,10 +185,6 @@ def process_inputs():
             subject.teacher_id = teacher.id
 
         subject_map[subject_name] = subject
-        # -----------------------------
-        # CREATE TEACHING ASSIGNMENT
-        # -----------------------------
-
         existing_assignment = TeachingAssignment.query.filter_by(
             teacher_id=teacher.id,
             subject_id=subject.id,
@@ -250,14 +201,10 @@ def process_inputs():
 
             db.session.add(assignment)
 
-    # Save everything
     db.session.commit()
 
     print("Teachers, subjects, and teaching assignments processed successfully!")
 
-    # -------------------------------------------------
-    # 5️⃣ BASE TIMETABLES
-    # -------------------------------------------------
     xls = pd.ExcelFile("uploads/timetables.xlsx")
 
     for sheet in xls.sheet_names:
@@ -288,8 +235,6 @@ def process_inputs():
 
                 subject_name = normalize_subject(value)
 
-
-                # ACTIVITY
                 if subject_name in ["activity", "activity_hour"]:
 
                     db.session.add(TimetableEntry(
@@ -303,8 +248,6 @@ def process_inputs():
 
                     continue
 
-
-                # LAB
                 if subject_type.get(subject_name) == "lab":
 
                     subject = subject_map.get(subject_name)
@@ -339,7 +282,6 @@ def process_inputs():
 
                     continue
 
-                # THEORY
                 subject = subject_map.get(subject_name)
 
                 if subject is None:
@@ -380,9 +322,6 @@ def process_inputs():
                 ))
 
 
-    # -------------------------------------------------
-    # 6️⃣ PARALLEL CLASSES
-    # -------------------------------------------------
     df = normalize(pd.read_excel("uploads/parallel_classes.xlsx"))
 
     class_col = get_class_column(df)
@@ -415,7 +354,7 @@ def process_inputs():
             class_id=cls.id
         ).first()
 
-        # Skip if subject not mapped to teacher
+
         teacher_id = assignment.teacher_id if assignment else None
         db.session.add(TimetableEntry(
             class_id=cls.id,
@@ -427,10 +366,6 @@ def process_inputs():
             is_floating=True
         ))
 
-
-    # -------------------------------------------------
-    # 7️⃣ STUDENT ACCOUNTS
-    # -------------------------------------------------
     df = normalize(pd.read_excel("uploads/student_mapping.xlsx"))
 
     class_col = get_class_column(df)
@@ -464,10 +399,6 @@ def process_inputs():
 
     print("\n========== INPUT PROCESSOR DONE ==========\n")
 
-
-# -------------------------------------------------
-# 8️⃣ LAB ROOM ASSIGNMENT
-# -------------------------------------------------
 def process_lab_rooms():
 
     import os
