@@ -270,7 +270,7 @@ def process_inputs():
                         class_id=cls.id
                     ).all()
 
-                    # ✅ If mapping exists → use it
+                  
                     if assignments:
                         for assign in assignments:
                             db.session.add(TimetableEntry(
@@ -284,7 +284,6 @@ def process_inputs():
                                 is_floating=(cls.class_category == "floating")
                             ))
                     else:
-                        # ✅ IMPORTANT: create entry WITHOUT teacher
                         db.session.add(TimetableEntry(
                             class_id=cls.id,
                             subject_id=subject.id,
