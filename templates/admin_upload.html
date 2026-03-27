@@ -119,7 +119,6 @@
     color: var(--white);
   }
 
-  /* Progress bar */
   .upload-progress { margin-bottom: 28px; }
 
   .progress-header {
@@ -146,7 +145,6 @@
     transition: width 0.3s ease;
   }
 
-  /* Submit */
   .submit-row {
     display: flex;
     align-items: center;
@@ -174,7 +172,6 @@
 
   .upload-note { font-size: 13px; color: var(--muted); }
 
-  /* Loading overlay */
   .loading-overlay {
     display: none;
     position: fixed;
@@ -204,20 +201,17 @@
     font-size: 15px;
     font-weight: 600;
   }
-
-  /* Responsive */
+ 
   @media (max-width: 768px) {
     .upload-grid { grid-template-columns: 1fr; }
   }
 </style>
 
-<!-- Loading overlay -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
   <p>Processing files and allocating rooms...</p>
 </div>
 
-<!-- Confirmation Modal -->
 <div id="confirmModal" style="
   display: none;
   position: fixed;
@@ -267,15 +261,13 @@
   </div>
 </div>
 
-<!-- Header -->
 <div class="page-header">
   <h1>Upload Timetable Files</h1>
   <p>Select all required Excel files to process and allocate classrooms automatically.</p>
 </div>
 
 <div class="upload-card">
-
-  <!-- Progress -->
+ 
   <div class="upload-progress">
     <div class="progress-header">
       <span>Files Selected</span>
@@ -288,8 +280,7 @@
 
   <form method="POST" enctype="multipart/form-data" id="uploadForm">
     <div class="upload-grid">
-
-      <!-- Class Strength -->
+    
       <div class="file-field">
         <label class="field-label">Class Strength</label>
         <div class="file-box" id="box-class_strength"
@@ -304,8 +295,7 @@
                accept=".xlsx" required
                onchange="fileSelected(this, 'class_strength')">
       </div>
-
-      <!-- Room Mapping -->
+    
       <div class="file-field">
         <label class="field-label">Room Mapping</label>
         <div class="file-box" id="box-room_mapping"
@@ -320,8 +310,7 @@
                accept=".xlsx" required
                onchange="fileSelected(this, 'room_mapping')">
       </div>
-
-      <!-- Class Type -->
+     
       <div class="file-field">
         <label class="field-label">Class Type</label>
         <div class="file-box" id="box-class_type"
@@ -336,8 +325,7 @@
                accept=".xlsx" required
                onchange="fileSelected(this, 'class_type')">
       </div>
-
-      <!-- Teacher Subject Mapping -->
+  
       <div class="file-field">
         <label class="field-label">Teacher Subject Mapping</label>
         <div class="file-box" id="box-teacher_subject"
@@ -352,8 +340,7 @@
                accept=".xlsx" required
                onchange="fileSelected(this, 'teacher_subject')">
       </div>
-
-      <!-- Parallel Classes -->
+  
       <div class="file-field">
         <label class="field-label">Parallel Classes</label>
         <div class="file-box" id="box-parallel_classes"
@@ -368,8 +355,7 @@
                accept=".xlsx" required
                onchange="fileSelected(this, 'parallel_classes')">
       </div>
-
-      <!-- Student Mapping -->
+  
       <div class="file-field">
         <label class="field-label">Student Mapping</label>
         <div class="file-box" id="box-student_mapping"
@@ -384,8 +370,7 @@
                accept=".xlsx" required
                onchange="fileSelected(this, 'student_mapping')">
       </div>
-
-      <!-- Timetables -->
+  
       <div class="file-field">
         <label class="field-label">Timetables</label>
         <div class="file-box" id="box-timetables"
@@ -400,8 +385,7 @@
                accept=".xlsx" required
                onchange="fileSelected(this, 'timetables')">
       </div>
-
-      <!-- Lab Room Mapping -->
+  
       <div class="file-field">
         <label class="field-label">Lab Room Mapping</label>
         <div class="file-box" id="box-lab_rooms"
@@ -419,7 +403,6 @@
 
     </div>
 
-    <!-- Submit -->
     <div class="submit-row">
       <button type="submit" class="upload-btn" id="submitBtn" disabled>
         Upload All Files
@@ -453,14 +436,13 @@
       const uploadedName = input.files[0].name;
       const expectedName = expectedFiles[key];
 
-      if (uploadedName !== expectedName) {
-        // Wrong file
+      if (uploadedName !== expectedName) {   
         box.classList.remove('selected');
         box.classList.add('error');
         name.textContent = 'Wrong file! Expected: ' + expectedName;
         delete selectedFiles[key];
       } else {
-        // Correct file
+        
         box.classList.remove('error');
         box.classList.add('selected');
         name.textContent = uploadedName;

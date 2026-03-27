@@ -31,7 +31,6 @@ body {
   align-items: stretch;
 }
 
-/* ── LEFT PANEL ── */
 .left {
   width: 48%;
   background: linear-gradient(145deg, var(--navy) 0%, #1a5f6e 60%, var(--teal) 100%);
@@ -151,7 +150,6 @@ body {
   opacity: 0.8;
 }
 
-/* ── RIGHT PANEL ── */
 .right {
   width: 52%;
   background: var(--white);
@@ -183,8 +181,6 @@ body {
   font-size: 15px;
 }
 
-
-/* ── FLASH ALERTS ── */
 .alert {
   padding: 12px 16px;
   border-radius: 10px;
@@ -194,7 +190,6 @@ body {
 .alert-error   { background: #fef2f2; color: #c0392b; border: 1px solid #fecaca; }
 .alert-success { background: var(--teal-lt); color: var(--teal); border: 1px solid #99d9d9; }
 
-/* ── FORM ── */
 form label {
   display: block;
   font-size: 13px;
@@ -248,7 +243,6 @@ form label {
 }
 .eye:hover { color: var(--teal); }
 
-/* ── OPTIONS ROW ── */
 .options {
   display: flex;
   justify-content: space-between;
@@ -278,7 +272,6 @@ form label {
 }
 .forgot:hover { text-decoration: underline; }
 
-/* ── SUBMIT BUTTON ── */
 .login-btn {
   width: 100%;
   padding: 16px;
@@ -296,7 +289,6 @@ form label {
 .login-btn:hover  { background: var(--teal); }
 .login-btn:active { transform: scale(0.99); }
 
-/* ── HELP TEXT ── */
 .help {
   margin-top: 24px;
   text-align: center;
@@ -314,16 +306,13 @@ form label {
 input::-ms-reveal,
 input::-ms-clear { display: none; }
 
-/* ── RESPONSIVE ── */
 
-/* Tablet */
 @media (max-width: 1024px) {
   .left { width: 45%; padding: 48px 36px; }
   .right { width: 55%; padding: 48px 36px; }
   .left h1 { font-size: 40px; }
 }
 
-/* Mobile — stack panels vertically */
 @media (max-width: 768px) {
   .container {
     flex-direction: column;
@@ -336,7 +325,6 @@ input::-ms-clear { display: none; }
     min-height: auto;
   }
 
-  /* Hide heavy content on mobile to keep it clean */
   .left h1 { font-size: 26px; margin-bottom: 12px; }
   .desc { display: none; }
   .feature-list { display: none; }
@@ -354,7 +342,6 @@ input::-ms-clear { display: none; }
   .right h2 { font-size: 36px; }
 }
 
-/* Small mobile */
 @media (max-width: 480px) {
   .left { padding: 28px 20px; }
   .logo-label { font-size: 18px; }

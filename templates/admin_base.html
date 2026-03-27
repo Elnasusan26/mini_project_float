@@ -35,7 +35,6 @@
       line-height: 1.6;
     }
 
-    /* ── SIDEBAR ── */
     .sidebar {
       width: 240px;
       background: var(--white);
@@ -154,7 +153,6 @@
       transform: translateX(2px);
     }
 
-    /* ── LAYOUT ── */
     .layout { display: flex; width: 100%; }
 
     .main-content {
@@ -164,7 +162,6 @@
       min-height: 100vh;
     }
 
-    /* ── TOPBAR (mobile only) ── */
     .topbar {
       display: none;
       position: fixed;
@@ -213,7 +210,6 @@
 
     .sidebar-overlay.active { display: block; }
 
-    /* ── FLASH ── */
     .flash-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -272,8 +268,7 @@
 
     .flash-popup.success { border-top: 4px solid var(--teal); }
     .flash-popup.error   { border-top: 4px solid #c0392b; }
-
-    /* ── PAGE TRANSITION ── */
+    
     .main-content {
       animation: pageFadeIn .3s ease;
     }
@@ -283,7 +278,7 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ── RESPONSIVE ── */
+    
     @media (max-width: 1024px) {
       .sidebar { width: 200px; }
       .main-content { margin-left: 200px; padding: 28px; }
