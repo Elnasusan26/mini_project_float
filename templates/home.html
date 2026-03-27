@@ -19,7 +19,6 @@
     color: var(--muted);
   }
 
-  /* ── STAT CARDS ── */
   .overview-cards {
     display: flex;
     flex-direction: row;
@@ -60,7 +59,6 @@
     color: var(--muted);
   }
 
-  /* ── RECENT ACTIVITY ── */
   .section-card {
     background: var(--white);
     border: 1px solid var(--border);
@@ -138,19 +136,17 @@
     font-size: 14px;
   }
 
-  /* ── RESPONSIVE ── */
+  
   @media (max-width: 768px) {
     .overview-cards { flex-direction: column; }
   }
 </style>
 
-<!-- Header -->
 <div class="page-header">
   <h1>System Overview</h1>
   <p>Welcome back, Administrator. Here's what's happening today.</p>
 </div>
 
-<!-- Stat Cards -->
 <div class="overview-cards">
   <div class="overview-card">
     <div class="card-info">
@@ -172,7 +168,6 @@
   </div>
 </div>
 
-<!-- Recent Activity -->
 <div class="section-card">
   <h3>🕐 Recent Activity</h3>
   <div class="activity-list">

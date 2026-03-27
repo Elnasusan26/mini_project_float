@@ -18,7 +18,6 @@
     color: var(--navy);
   }
 
-  /* Class section */
   .class-section {
     background: var(--white);
     border: 1px solid var(--border);
@@ -60,7 +59,6 @@
 
   .export-btn:hover { background: var(--teal); }
 
-  /* Table */
   .table-scroll { overflow-x: auto; }
 
   table {
@@ -107,7 +105,6 @@
     white-space: nowrap;
   }
 
-  /* Cell types */
   .cell-allocated  { background: #e8f8e8; }
   .cell-unallocated { background: #fff0f0; }
   .cell-cancelled  { background: #ffe0e0; color: #b91c1c; font-weight: 700; font-size: 13px; }
@@ -131,7 +128,6 @@
   .cell-lab .room-name        { color: #2255aa; }
   .cell-unallocated .room-name { color: #b91c1c; }
 
-  /* Legend */
   .legend {
     display: flex;
     align-items: center;
@@ -162,7 +158,6 @@
   .legend-box.lab         { background: #dde8f8; border: 1px solid #aabbdd; }
 </style>
 
-<!-- Header -->
 <div class="page-header">
   <h1>Floating Class Timetable</h1>
   <input type="text" id="classSearch" placeholder=" Search class..."
@@ -184,7 +179,6 @@
 {% for class_name, class_data in timetable.items() %}
 <div class="class-section">
 
-  <!-- Class Header -->
   <div class="class-header">
     <h2>Class: {{ class_name }}</h2>
     <a href="{{ url_for('export_class_timetable', class_id=class_map[class_name]) }}"
@@ -193,7 +187,6 @@
     </a>
   </div>
 
-  <!-- Table -->
   <div class="table-scroll">
     <table>
       <thead>
@@ -250,7 +243,6 @@
     </table>
   </div>
 
-  <!-- Legend -->
   <div class="legend">
     <div class="legend-item">
       <div class="legend-box allocated"></div> Allocated

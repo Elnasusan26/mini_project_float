@@ -1,6 +1,3 @@
-/* ===============================
-   BASE LAYOUT
-   =============================== */
 
 body {
   margin: 0;
@@ -12,10 +9,6 @@ body {
   display: flex;
   min-height: 100vh;
 }
-
-/* ===============================
-   SIDEBAR
-   =============================== */
 
 .sidebar {
   width: 260px;
@@ -66,19 +59,11 @@ body {
   font-size: 14px;
 }
 
-/* ===============================
-   MAIN CONTENT
-   =============================== */
-
 .main-content {
   flex: 1;
   padding: 40px;
   overflow-y: auto;
 }
-
-/* ===============================
-   SYSTEM OVERVIEW
-   =============================== */
 
 .page-title {
   font-size: 28px;
@@ -112,10 +97,6 @@ body {
   font-size: 16px;
   color: #6b7280;
 }
-
-/* ===============================
-   UPLOAD PAGE
-   =============================== */
 
 .page-subtitle {
   color: #6b7280;
