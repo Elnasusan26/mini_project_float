@@ -270,18 +270,44 @@ def process_inputs():
                         class_id=cls.id
                     ).all()
 
-                    for assign in assignments:
+                    # ✅ If mapping exists → use it
+                    if assignments:
+                        for assign in assignments:
+                            db.session.add(TimetableEntry(
+                                class_id=cls.id,
+                                subject_id=subject.id,
+                                teacher_id=assign.teacher_id,
+                                day=day,
+                                slot=raw_slot,
+                                lab_rooms=None,
+                                is_lab_hour=True,
+                                is_floating=(cls.class_category == "floating")
+                            ))
+                    else:
+                        # ✅ IMPORTANT: create entry WITHOUT teacher
                         db.session.add(TimetableEntry(
                             class_id=cls.id,
                             subject_id=subject.id,
-                            teacher_id=assign.teacher_id,
+                            teacher_id=None,   # 🔥 THIS IS KEY
                             day=day,
                             slot=raw_slot,
-                            is_lab_hour=True
+                            lab_rooms=None,
+                            is_lab_hour=True,
+                            is_floating=(cls.class_category == "floating")
                         ))
                     continue
 
-                subject = subject_map.get(subject_name)
+                subject = Subject.query.filter_by(name=subject_name).first()
+
+                if subject is None:
+                    subject = Subject(
+                        name=subject_name,
+                        is_lab=(subject_type.get(subject_name) == "lab")
+                    )
+                    db.session.add(subject)
+                    db.session.flush()
+
+                subject_map[subject_name] = subject
 
                 if subject is None:
                     subject = Subject(

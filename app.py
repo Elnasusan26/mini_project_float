@@ -403,7 +403,11 @@ def view_floating_timetable():
         # check if subject already exists in this slot
         existing = None
         for item in cell:
-            if item["subject"] == (e.subject.name if e.subject else "-"):
+            if (
+                item["subject"] == (e.subject.name if e.subject else "-")
+                and item["batch"] == e.batch
+                and item["lab_rooms"] == e.lab_rooms
+            ):
                 existing = item
                 break
 
