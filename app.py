@@ -365,21 +365,8 @@ def faculty_timetable(teacher_id):
         .order_by(TimetableEntry.day, TimetableEntry.slot)
         .all()
     )
-
-    today = datetime.today().date()
-
-    cancelled = CancelledClass.query.filter(
-        CancelledClass.date >= today
-    ).all()
-
-    cancelled_lookup = set()
-
-    for c in cancelled:
-        cancel_day = c.date.strftime("%A").upper()
-        slot = normalize_slot(c.slot)
-
-        cancelled_lookup.add((c.class_id, cancel_day, slot))
-
+    cancelled_lookup = get_cancelled_lookup()
+    
     template = "admin_faculty_timetable.html" if session.get("role") == "admin" else "teacher_timetable.html"
     return render_template(
         "teacher_timetable.html",   
@@ -411,12 +398,29 @@ def view_floating_timetable():
         day = e.day
         slot = normalize_slot(e.slot)
 
-        raw[cls][day][slot].append({
-            "subject": e.subject.name if e.subject else "-",
-            "room": e.room.name if e.room else "-",
-            "lab_rooms": e.lab_rooms,
-            "batch": e.batch
-        })
+        cell = raw[cls][day][slot]
+
+        # check if subject already exists in this slot
+        existing = None
+        for item in cell:
+            if item["subject"] == (e.subject.name if e.subject else "-"):
+                existing = item
+                break
+
+        teacher_name = e.teacher.name if e.teacher else ""
+
+        if existing:
+            # append teacher
+            if teacher_name and teacher_name not in existing["teachers"]:
+                existing["teachers"].append(teacher_name)
+        else:
+            cell.append({
+                "subject": e.subject.name if e.subject else "-",
+                "room": e.room.name if e.room else "-",
+                "lab_rooms": e.lab_rooms,
+                "batch": e.batch,
+                "teachers": [teacher_name] if teacher_name else []
+            })
 
     cancelled_lookup = get_cancelled_lookup(include_class_name=True)
     class_map = {c.name: c.id for c in Class.query.all()}
@@ -447,11 +451,7 @@ def teacher_dashboard():
 
     entries = (
         TimetableEntry.query
-        .join(TeachingAssignment,
-            (TeachingAssignment.subject_id == TimetableEntry.subject_id) &
-            (TeachingAssignment.class_id == TimetableEntry.class_id)
-        )
-        .filter(TeachingAssignment.teacher_id == user.teacher_id)
+        .filter(TimetableEntry.teacher_id == user.teacher_id)
         .order_by(TimetableEntry.day, TimetableEntry.slot)
         .all()
     )

@@ -265,27 +265,31 @@ def process_inputs():
 
                     subject_map[subject_name] = subject
 
-                    assignment = TeachingAssignment.query.filter_by(
+                    assignments = TeachingAssignment.query.filter_by(
                         subject_id=subject.id,
                         class_id=cls.id
-                    ).first()
+                    ).all()
 
-                    teacher_id = assignment.teacher_id if assignment else None
-                    db.session.add(TimetableEntry(
-                        class_id=cls.id,
-                        subject_id=subject.id,
-                        teacher_id=teacher_id,
-                        day=day,
-                        slot=raw_slot,
-                        is_lab_hour=True
-                    ))
-
+                    for assign in assignments:
+                        db.session.add(TimetableEntry(
+                            class_id=cls.id,
+                            subject_id=subject.id,
+                            teacher_id=assign.teacher_id,
+                            day=day,
+                            slot=raw_slot,
+                            is_lab_hour=True
+                        ))
                     continue
 
                 subject = subject_map.get(subject_name)
 
                 if subject is None:
-                    subject = Subject.query.filter_by(name=subject_name).first()
+                    subject = Subject(
+                        name=subject_name,
+                        is_lab=(subject_type.get(subject_name) == "lab")
+                    )
+                    db.session.add(subject)
+                    db.session.flush()
 
                 if subject is None:
                     subject = Subject(name=subject_name)
