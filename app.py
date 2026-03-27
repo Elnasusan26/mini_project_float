@@ -421,7 +421,10 @@ def view_floating_timetable():
     cancelled_lookup = get_cancelled_lookup(include_class_name=True)
     class_map = {c.name: c.id for c in Class.query.all()}
 
-    template = "floating_timetable_grid_teacher.html" if role == "teacher" else "floating_timetable_grid.html"
+    if role == "admin":
+        template = "floating_timetable_grid.html"
+    else:
+        template = "floating_timetable_grid_teacher.html"
 
     return render_template(
         template,

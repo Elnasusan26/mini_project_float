@@ -4,204 +4,164 @@
 {% block content %}
 
 <style>
-.page-header{margin-bottom:32px;}
+.page-header { margin-bottom: 24px; }
 
-.page-header h2{
-font-size:30px;
-font-weight:700;
-color:var(--navy);
-margin-bottom:6px;
+.page-header h2 {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 6px;
 }
 
-.page-header p{
-font-size:15px;
-color:var(--muted);
+.page-header p {
+  font-size: 15px;
+  color: var(--muted);
 }
 
-.table-card{
-background:#fff;
-border-radius:18px;
-border:1px solid var(--border);
-padding:28px;
-box-shadow:0 4px 18px rgba(0,0,0,0.04);
+.table-card {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  padding: 28px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.04);
 }
 
-table{
-border-collapse:collapse;
-width:100%;
+table {
+  border-collapse: collapse;
+  width: 100%;
 }
 
-thead th{
-background:var(--navy);
-color:#fff;
-font-weight:600;
-font-size:14px;
-padding:16px;
-text-align:center;
+thead th {
+  background: var(--navy);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 16px;
+  text-align: center;
 }
 
-thead th:first-child{
-background:#f9fafb;
-color:var(--muted);
-text-align:left;
+thead th:first-child {
+  background: #f9fafb;
+  color: var(--muted);
+  text-align: left;
 }
 
-tbody td{
-padding:18px 14px;
-border-bottom:1px solid var(--border);
-text-align:center;
-vertical-align:top;
+tbody td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  vertical-align: middle;
 }
 
-.day-col{
-text-align:left;
-font-weight:600;
-color:var(--muted);
-white-space:nowrap;
+.day-col {
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  padding-left: 14px;
 }
 
-.class-cell{
-background:#f9fafb;
-border-radius:12px;
-padding:14px;
+.class-cell {
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 4px;
 }
 
-.subject{
-font-weight:700;
-font-size:15px;
-margin-bottom:4px;
+.cell-theory { background: #e8f8e8; }
+.cell-lab    { background: #dde8f8; }
+
+.cell-theory .room-tag { background: #c8efc8; color: #2d7a2d; }
+.cell-lab .room-tag    { background: #c0d4f0; color: #2255aa; }
+
+.subject {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 3px;
 }
 
-.room-tag{
-display:inline-block;
-font-size:12px;
-font-weight:600;
-padding:4px 10px;
-border-radius:6px;
-background:rgba(0,0,0,0.06);
-color:var(--muted);
+.room-tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 6px;
 }
 
-.cancelled{
-background:#ffe6e6;
-border-radius:12px;
-padding:14px;
-color:#a10000;
-font-weight:700;
+.cancelled {
+  background: #ffe6e6;
+  border-radius: 12px;
+  padding: 14px;
+  color: #a10000;
+  font-weight: 700;
 }
 </style>
 
-
 <div class="page-header">
-<h2>{{ class_name }} Timetable</h2>
-<p>Your weekly class schedule</p>
+  <h2>{{ class_name }} Timetable</h2>
+  <p>Your weekly class schedule</p>
 </div>
-
 
 <div class="table-card">
 
-{% set days=['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'] %}
+  {% set days = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'] %}
 
-{% set slots=[
-'8.00_-_8.45',
-'9.10_-_9.55',
-'10.00_-_10.45',
-'10.50_-_11.35',
-'11.55_-_12.40',
-'12.45_-_1.30'
-] %}
+  {% set slots = [
+    '8.00_-_8.45',
+    '9.10_-_9.55',
+    '10.00_-_10.45',
+    '10.50_-_11.35',
+    '11.55_-_12.40',
+    '12.45_-_1.30'
+  ] %}
 
+  {% set lookup = {} %}
+  {% for e in entries %}
+    {% if e.day not in lookup %}
+      {% set _ = lookup.update({e.day: {}}) %}
+    {% endif %}
+    {% if e.slot not in lookup[e.day] %}
+      {% set _ = lookup[e.day].update({e.slot: []}) %}
+    {% endif %}
+    {% set _ = lookup[e.day][e.slot].append(e) %}
+  {% endfor %}
 
-{# Build lookup DAY -> SLOT #}
-
-{% set lookup={} %}
-{% for e in entries %}
-
-{% if e.day not in lookup %}
-{% set _ = lookup.update({e.day:{}}) %}
-{% endif %}
-
-{% if e.slot not in lookup[e.day] %}
-{% set _ = lookup[e.day].update({e.slot:[]}) %}
-{% endif %}
-
-{% set _ = lookup[e.day][e.slot].append(e) %}
-
-{% endfor %}
-
-
-<table>
-
-<thead>
-<tr>
-
-<th>Day</th>
-
-{% for slot in slots %}
-<th>{{slot | replace('_-_',' – ')}}</th>
-{% endfor %}
-
-</tr>
-</thead>
-
-
-<tbody>
-
-{% for day in days %}
-<tr>
-
-<td class="day-col">{{day}}</td>
-
-{% for slot in slots %}
-
-<td>
-
-{% if (day,slot) in cancelled_lookup %}
-
-<div class="cancelled">
-❌ CANCELLED
-</div>
-
-{% elif lookup.get(day) and lookup[day].get(slot) %}
-
-{% for e in lookup[day][slot] %}
-
-<div class="class-cell">
-
-<div class="subject">
-{{e.subject.name if e.subject else '-'}}
-</div>
-
-<span class="room-tag">
-
-{% if e.lab_rooms %}
-
-({{e.lab_rooms}})
-
-{% else %}
-
-({{e.room.name if e.room else '—'}})
-
-{% endif %}
-
-</span>
-
-</div>
-
-{% endfor %}
-
-{% endif %}
-
-</td>
-
-{% endfor %}
-
-</tr>
-{% endfor %}
-
-</tbody>
-
-</table>
+  <table>
+    <thead>
+      <tr>
+        <th style="background-color:#1b3a4b; color:#fff; font-weight:600;">Day</th>
+        {% for slot in slots %}
+          <th>{{ slot | replace('_-_', ' – ') }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for day in days %}
+      <tr>
+        <td class="day-col">{{ day }}</td>
+        {% for slot in slots %}
+        <td>
+          {% if (day, slot) in cancelled_lookup %}
+            <div class="cancelled">❌ CANCELLED</div>
+          {% elif lookup.get(day) and lookup[day].get(slot) %}
+            {% for e in lookup[day][slot] %}
+              <div class="class-cell {% if e.lab_rooms %}cell-lab{% else %}cell-theory{% endif %}">
+                <div class="subject">{{ e.subject.name if e.subject else '-' }}</div>
+                <span class="room-tag">
+                  {% if e.lab_rooms %}{{ e.lab_rooms }}
+                  {% elif e.room %}{{ e.room.name }}
+                  {% else %}—{% endif %}
+                </span>
+              </div>
+            {% endfor %}
+          {% else %}
+            <span style="color:var(--muted)">—</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
 </div>
 
