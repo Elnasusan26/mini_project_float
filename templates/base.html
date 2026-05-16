@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <meta charset="UTF-8">
 <title>FloatED | {% block title %}{% endblock %}</title>
 
@@ -64,8 +65,7 @@ color:var(--navy);
 margin-bottom:4px;
 }
 
-.logo::before{
-content:'🎓';
+.logo-icon{
 width:34px;
 height:34px;
 background:var(--teal);
@@ -73,9 +73,12 @@ border-radius:9px;
 display:flex;
 align-items:center;
 justify-content:center;
-font-size:16px;
 }
 
+.logo-icon i{
+color:white;
+font-size:16px;
+}
 .subtitle{
 font-size:12px;
 color:var(--muted);
@@ -216,7 +219,12 @@ background:#f5f7fa;
 <div>
 
 <div class="sidebar-top">
-<h2 class="logo">FloatED</h2>
+<h2 class="logo">
+  <span class="logo-icon">
+    <i class="fas fa-graduation-cap"></i>
+  </span>
+  FloatED
+</h2>
 <span class="subtitle">
 {{ session.role.capitalize() if session.role else "" }}
 </span>
