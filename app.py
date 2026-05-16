@@ -368,12 +368,11 @@ def faculty_timetable(teacher_id):
     cancelled_lookup = get_cancelled_lookup()
     
     template = "admin_faculty_timetable.html" if session.get("role") == "admin" else "teacher_timetable.html"
-    
     return render_template(
-        template,
+        "teacher_timetable.html",   
         entries=entries,
         cancelled_lookup=cancelled_lookup,
-        teacher_name=teacher.name
+        teacher_name=teacher.name   
     )
 
 @app.route("/view/timetable")
